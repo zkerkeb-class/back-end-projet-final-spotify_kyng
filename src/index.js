@@ -7,6 +7,9 @@ const path = require('path');
 //const { scheduleTemporaryFileCleanup } = require('./services/cleanService.js');
 const router = require('./routes/index.js');
 const config = require('./config/config.js')[process.env.NODE_ENV || 'development'];
+const sessionMiddleware = require('./middlewares/session');
+app.use(sessionMiddleware);
+
 
 dotenv.config();
 
