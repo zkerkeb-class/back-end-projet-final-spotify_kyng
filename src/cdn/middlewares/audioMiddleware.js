@@ -6,13 +6,18 @@ const ffmpeg = require('fluent-ffmpeg');
 
 ffmpeg.setFfmpegPath(ffmpegPath); // Set the path for fluent-ffmpeg  // Required for audio conversion
 
-// Define the upload directory path
+// Define the upload directory paths
 const uploadDir = path.join(__dirname, '..', 'uploads');
 const optimizedDir = path.join(__dirname, '..', 'optimized');
 
 // Ensure the upload directory exists
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// Ensure the optimized directory exists
+if (!fs.existsSync(optimizedDir)) {
+  fs.mkdirSync(optimizedDir, { recursive: true });
 }
 
 // Configure Multer storage
@@ -75,7 +80,23 @@ const audioMiddleware = (req, res, next) => {
     }));
 
     console.log('Files uploaded successfully:', req.uploadedFiles);
-    next();
+
+    // Convert uploaded files to m4a format
+    try {
+      for (const file of req.uploadedFiles) {
+        const convertedPath = await convertToM4a(file.path, optimizedDir);
+        file.convertedPath = convertedPath;  // Attach the converted path to the file info
+      }
+
+      console.log('Files converted to m4a format successfully');
+      next();  // Proceed to the next middleware or controller
+    } catch (conversionError) {
+      console.error('Error during audio conversion:', conversionError.message);
+      return res.status(500).json({
+        error: 'Audio conversion failed',
+        details: conversionError.message
+      });
+    }
   });
 };
 

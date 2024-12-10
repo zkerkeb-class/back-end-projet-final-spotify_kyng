@@ -1,33 +1,31 @@
 const ffmpeg = require('fluent-ffmpeg');
 const path = require('path'); // Ensure path module is imported
-const fs = require('fs'); // Ensure path module is imported
+const fs = require('fs'); // Ensure fs module is imported
 
-async function optimizeAudio(inputPath, outputDir, quality = 'medium') {
-  const qualityConfig = {
-    medium: { bitrate: '160k', suffix: 'medium' },
-    high: { bitrate: '320k', suffix: 'high' },
-    low: { bitrate: '96k', suffix: 'low' }
-  };
-
-  const config = qualityConfig[quality];
-  if (!config) throw new Error(`Invalid quality setting: ${quality}`);
-
+async function optimizeAudio(inputPath, outputDir) {
+  // Ensure output directory exists
   if (!fs.existsSync(outputDir)) {
     fs.mkdirSync(outputDir, { recursive: true });
     console.log(`Created directory: ${outputDir}`);
   }
 
-  // Ensure paths are correctly used
-  const filename = path.basename(inputPath, path.extname(inputPath));  // Get file name without extension
-  const outputPath = path.join(outputDir, `${filename}_${config.suffix}.m4a`); // Full path for output file
+  const filename = path.basename(inputPath, path.extname(inputPath)); // Get file name without extension
+  let outputPath = path.join(outputDir, `${filename}.m4a`); // Full path for output file
+
+  // Ensure the outputPath differs from the inputPath
+  let counter = 1;
+  while (outputPath === inputPath || fs.existsSync(outputPath)) {
+    outputPath = path.join(outputDir, `${filename}-${counter}.m4a`);
+    counter++;
+  }
 
   return new Promise((resolve, reject) => {
     ffmpeg(inputPath)
-      .audioCodec('aac')
-      .audioBitrate(config.bitrate)
-      .audioFrequency(44100)
-      .audioChannels(2)
-      .addOption('-map_metadata', '0')
+      .audioCodec('aac') // Set the audio codec to AAC
+      .audioBitrate('160k') // Set audio bitrate
+      .audioFrequency(44100) // Set audio frequency
+      .audioChannels(2) // Set audio channels to stereo (2)
+      .addOption('-map_metadata', '0') // Retain metadata from the input file
       .on('end', () => {
         console.log(`Optimization complete: ${outputPath}`);
         resolve(outputPath);
@@ -36,10 +34,10 @@ async function optimizeAudio(inputPath, outputDir, quality = 'medium') {
         console.error(`Error optimizing audio file: ${err.message}`);
         reject(err);
       })
-      .save(outputPath); // Saving the optimized file
+      .save(outputPath); // Save the optimized file
   });
 }
 
 module.exports = {
-  optimizeAudio
+  optimizeAudio,
 };

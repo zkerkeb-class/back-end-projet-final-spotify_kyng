@@ -30,13 +30,14 @@ router.post('/upload-multiple-music', audioMiddleware, async (req, res) => {
 
     // Directories for processing
     const uploadDir = path.join(__dirname, '..', 'uploads');
-    const optimizedDir = path.join(__dirname, '..', 'optimized');
+    // const optimizedDir = path.join(__dirname, '..', 'optimized');
+    const optimizedDir = path.join(__dirname, '..', 'cdn', 'optimized');
 
     // Process the uploaded files
     const results = await Promise.all(
       uploadedFiles.map(async (uploadedFile) => {
         // Optimize and process each file
-        const optimizedPath = await optimizeAudio(uploadedFile.path, optimizedDir, 'medium');
+        const optimizedPath = await optimizeAudio(uploadedFile.convertedPath, optimizedDir, 'medium');
         console.log('Optimized file saved at:', optimizedPath);
 
         // Assuming you seed the database with the file details
