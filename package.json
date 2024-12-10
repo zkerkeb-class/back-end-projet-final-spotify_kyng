@@ -3,10 +3,12 @@
   "version": "1.0.0",
   "main": "./src/index.js",
   "scripts": {
+    "start": "node src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1",
     "prepare": "husky",
     "format": "prettier-eslint --write ./src/**/*.{js,jsx,ts,tsx}",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "dev": "nodemon src/index.js"
   },
   "author": "",
   "license": "ISC",
@@ -28,5 +30,16 @@
       "prettier-eslint --write",
       "eslint --fix"
     ]
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "connect-redis": "^8.0.1",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-session": "^1.18.1",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.8.4",
+    "nodemon": "^3.1.7",
+    "redis": "^4.7.0"
   }
 }

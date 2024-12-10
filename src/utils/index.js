@@ -2,7 +2,6 @@ const express = require('express');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const path = require('path');
-//import { createClient } from 'redis';
 // const scheduleBackup = require('./services/backupService.js');
 //const { scheduleTemporaryFileCleanup } = require('./services/cleanService.js');
 const router = require('./routes/index.js');
@@ -78,23 +77,3 @@ process.on('SIGINT', async () => {
 });
 
 startServer();
-
-/*
-const redisHost = process.env.REDIS_HOST || 'localhost';
-const redisPort = process.env.REDIS_PORT || 6379;
-
-const redisClient = createClient({
-  url: `redis://${redisHost}:${redisPort}`
-});
-
-redisClient.connect();
-
-redisClient.on('error', (err) => {
-  console.log('Redis Client Error', err);
-});
-
-redisClient.set('key', 'value').then(() => {
-  redisClient.get('key').then((value) => {
-    console.log(value); 
-  });
-});    */
