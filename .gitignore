@@ -1,6 +1,6 @@
 node_modules/
 build/
-.env
+.env.dev
 .env.local
 dist
 .DS_Store
