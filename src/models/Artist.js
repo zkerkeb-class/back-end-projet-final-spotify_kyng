@@ -1,10 +1,6 @@
 module.exports = (mongoose) => {
   const artistSchema = new mongoose.Schema(
     {
-      // Artist key
-      artistKey: {
-        type: Number,
-      },
       // Artist name
       name: {
         type: String,

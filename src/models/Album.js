@@ -7,10 +7,6 @@ module.exports = (mongoose) => {
         required: true,
         trim: true,
       },
-      // Album key
-      albumKey: {
-        type: String,
-      },
       // Link to album
       linkTitle: {
         type: String,
@@ -23,6 +19,7 @@ module.exports = (mongoose) => {
       artistId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Artist',
+        required: true
       },
       // Release date
       releaseDate: {

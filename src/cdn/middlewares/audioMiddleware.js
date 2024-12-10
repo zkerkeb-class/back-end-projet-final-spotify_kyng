@@ -1,9 +1,14 @@
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
+const ffmpegPath = require('ffmpeg-static'); // Import static ffmpeg binary path
+const ffmpeg = require('fluent-ffmpeg');
+
+ffmpeg.setFfmpegPath(ffmpegPath); // Set the path for fluent-ffmpeg  // Required for audio conversion
 
 // Define the upload directory path
 const uploadDir = path.join(__dirname, '..', 'uploads');
+const optimizedDir = path.join(__dirname, '..', 'optimized');
 
 // Ensure the upload directory exists
 if (!fs.existsSync(uploadDir)) {
@@ -23,12 +28,12 @@ const storage = multer.diskStorage({
 
 // Create Multer instance with file size limits and file type validation
 const upload = multer({
-  storage: storage,  // Use the storage configuration here
+  storage: storage,
   limits: {
-    fileSize: 50 * 1024 * 1024 // 50 MB max
+    fileSize: 50 * 1024 * 1024  // 50 MB max
   },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = /mp3|m4a|wav|flac/i; // Case-insensitive regex
+    const allowedTypes = /mp3|m4a|wav|flac/i;  // Regex to allow common audio types
     const extname = allowedTypes.test(path.extname(file.originalname));
     if (extname) {
       return cb(null, true);
@@ -37,18 +42,16 @@ const upload = multer({
   }
 });
 
-// Middleware to handle audio uploads
+// Middleware to handle audio uploads and convert to m4a
 const audioMiddleware = (req, res, next) => {
-  upload.single('file')(req, res, (err) => {
+  upload.array('files', 10)(req, res, async (err) => {
     if (err instanceof multer.MulterError) {
-      // Multer-specific errors (e.g., file size exceeded)
       console.error('Multer error:', err.message);
       return res.status(400).json({
         error: 'Upload error',
         details: err.message
       });
     } else if (err) {
-      // General errors
       console.error('Server error during file upload:', err.message);
       return res.status(500).json({
         error: 'Server error',
@@ -56,27 +59,47 @@ const audioMiddleware = (req, res, next) => {
       });
     }
 
-    if (!req.file) {
-      // No file uploaded
-      console.error('No file was uploaded');
+    if (!req.files || req.files.length === 0) {
+      console.error('No files were uploaded');
       return res.status(400).json({
-        error: 'No file uploaded'
+        error: 'No files uploaded'
       });
     }
 
-    // Attach file details to the request for further processing
-    req.uploadedFile = {
-      originalName: req.file.originalname,
-      filename: req.file.filename,
-      path: req.file.path,
-      size: req.file.size,
-      mimetype: req.file.mimetype
-    };
+    req.uploadedFiles = req.files.map(file => ({
+      originalName: file.originalname,
+      filename: file.filename,
+      path: file.path,
+      size: file.size,
+      mimetype: file.mimetype
+    }));
 
-    console.log('File uploaded successfully:', req.uploadedFile);
+    console.log('Files uploaded successfully:', req.uploadedFiles);
     next();
   });
-
 };
+
+// Function to convert any audio file to m4a using ffmpeg
+async function convertToM4a(inputPath, outputDir) {
+  const filename = path.basename(inputPath, path.extname(inputPath));
+  const outputFilePath = path.join(outputDir, `${filename}.m4a`);
+
+  return new Promise((resolve, reject) => {
+    ffmpeg(inputPath)
+      .audioCodec('aac')
+      .audioBitrate('160k')
+      .audioFrequency(44100)
+      .audioChannels(2)
+      .on('end', () => {
+        console.log(`Converted file saved to ${outputFilePath}`);
+        resolve(outputFilePath);
+      })
+      .on('error', (err) => {
+        console.error('Error during audio conversion:', err.message);
+        reject(err);
+      })
+      .save(outputFilePath);
+  });
+}
 
 module.exports = audioMiddleware;
