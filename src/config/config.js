@@ -8,10 +8,11 @@ const envFilePath = path.resolve(__dirname, `../../.env.${environment}`);
 
 dotenv.config({ path: envFilePath });
 
-const { DB_USER, DB_PWD, DB_NAME, DB_HOST, DB_PORT } = process.env;
+const { DB_USER, DB_PWD, DB_NAME, DB_HOST, DB_PORT, MONGO_URI } = process.env;
 
 module.exports = {
   development: {
-    uri: `mongodb://${DB_HOST}:${DB_PORT}/${DB_NAME}`
+    // uri: `mongodb://${DB_HOST}:${DB_PORT}/${DB_NAME}`
+    uri: `${MONGO_URI}`
   }
 };
