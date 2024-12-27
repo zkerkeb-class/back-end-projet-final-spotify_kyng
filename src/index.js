@@ -6,6 +6,7 @@ const path = require('path');
 const { scheduleTemporaryFileCleanup } = require('./services/cleanService.js');
 const router = require('./routes/index.js');
 const config = require('./config/config.js')[process.env.NODE_ENV || 'development'];
+const globalRateLimiter = require('./middlewares/rateLimiter.js');
 
 dotenv.config();
 
@@ -53,6 +54,9 @@ const initializeApp = async () => {
 };
 
 app.use(express.json());
+
+//middleware rate limiting application
+app.use(globalRateLimiter);
 
 app.use("/api", router);
 
