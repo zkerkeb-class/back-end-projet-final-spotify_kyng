@@ -20,42 +20,51 @@ router.post('/seed', async (req, res) => {
 
 router.post('/upload-multiple-music', audioMiddleware, async (req, res) => {
   try {
-    const uploadedFiles = req.uploadedFiles; // This will be an array of files
+    const uploadedFiles = req.uploadedFiles;
 
     if (!uploadedFiles || uploadedFiles.length === 0) {
       return res.status(400).json({ error: 'No files uploaded' });
     }
 
-    console.log('Uploaded files:', uploadedFiles); // Shows all uploaded file details
+    console.log('Uploaded files:', uploadedFiles.map(file => ({
+      originalName: file.originalName,
+      path: file.path,
+      convertedPath: file.convertedPath
+    })));
 
-    // Directories for processing
-    const uploadDir = path.join(__dirname, '..', 'uploads');
-    // const optimizedDir = path.join(__dirname, '..', 'optimized');
-    const optimizedDir = path.join(__dirname, '..', 'cdn', 'optimized');
-
-    // Process the uploaded files
     const results = await Promise.all(
       uploadedFiles.map(async (uploadedFile) => {
-        // Optimize and process each file
-        const optimizedPath = await optimizeAudio(uploadedFile.convertedPath, optimizedDir, 'medium');
-        console.log('Optimized file saved at:', optimizedPath);
+        // Ensure we're using the converted path
+        const fileToUpload = uploadedFile.convertedPath || uploadedFile.path;
+        
+        if (!fileToUpload) {
+          console.error('No file path found for upload', uploadedFile);
+          return null;
+        }
 
-        // Assuming you seed the database with the file details
-        const result = await seedDatabaseFromAudioFiles(optimizedPath, uploadDir, optimizedDir);
-        return result;
+        try {
+          const result = await seedDatabaseFromAudioFiles(fileToUpload);
+          return result;
+        } catch (seedError) {
+          console.error('Seeding error:', seedError);
+          return null;
+        }
       })
     );
 
-    const totalTracks = results.reduce((acc, result) => acc + result.totalTracks, 0);
-    const processedTracks = results.reduce((acc, result) => acc.concat(result.processedTracks), []);
+    // Filter out any null results
+    const validResults = results.filter(result => result !== null);
+
+    const totalTracks = validResults.reduce((acc, result) => acc + (result.totalTracks || 0), 0);
+    const processedTracks = validResults.reduce((acc, result) => acc + (result.processedTracks || []).length, 0);
 
     res.json({
       message: 'Music files processed successfully',
       totalTracks,
-      processedTracks: processedTracks.length,
+      processedTracks,
     });
   } catch (error) {
-    console.error('Error processing music files:', error.message);
+    console.error('Error processing music files:', error);
     res.status(500).json({
       error: 'Failed to process music files',
       details: error.message,

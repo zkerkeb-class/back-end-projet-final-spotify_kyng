@@ -8,7 +8,7 @@ const envFilePath = path.resolve(__dirname, `../../.env.${environment}`);
 
 dotenv.config({ path: envFilePath });
 
-const { DB_USER, DB_PWD, DB_NAME, DB_HOST, DB_PORT, MONGO_URI } = process.env;
+const { DB_USER, DB_PWD, DB_NAME, DB_HOST, DB_PORT, MONGO_URI, AZURE_STORAGE_ACCOUNT_KEY, AZURE_STORAGE_ACCOUNT_NAME } = process.env;
 
 module.exports = {
   development: {

@@ -2,131 +2,201 @@ const { faker } = require('@faker-js/faker');
 const logger = require('../utils/logger');
 const { extractAudioMetadata } = require('../utils/metadataExtractor');
 const mongoose = require('mongoose');
+const { BlobServiceClient, StorageSharedKeyCredential } = require('@azure/storage-blob');
 const path = require('path');
 const fs = require('fs').promises;
+const dotenv = require('dotenv');
+dotenv.config({ path: '.env.dev' }); // Explicitly load .env.dev
+
+
 
 const Artist = require('../models/Artist')(mongoose);
 const Album = require('../models/Album')(mongoose);
 const Track = require('../models/Track')(mongoose);
 
+const accountName = process.env.AZURE_STORAGE_ACCOUNT_NAME;
+const accountKey = process.env.AZURE_STORAGE_ACCOUNT_KEY;
+
+console.log('test : ', accountName, accountKey)
+const containerName = 'spotify';
+
 const generateGenre = () => {
   const genres = [
-    'Rock',
-    'Pop',
-    'Jazz',
-    'Classical',
-    'Hip Hop',
-    'Electronic',
-    'R&B',
-    'Folk',
-    'Country',
-    'Blues',
-    'Soul',
-    'Reggae',
-    'Metal',
-    'Punk',
-    'Alternative',
+    'Rock', 'Pop', 'Jazz', 'Classical', 'Hip Hop',
+    'Electronic', 'R&B', 'Folk', 'Country', 'Blues',
+    'Soul', 'Reggae', 'Metal', 'Punk', 'Alternative'
   ];
   return faker.helpers.arrayElement(genres);
 };
 
-const seedDatabaseFromAudioFiles = async (audioFiles, outputDir) => {
-  // Ensure audioFiles is always an array
-  const filesArray = Array.isArray(audioFiles) ? audioFiles : [audioFiles];
+// Validate and get file path
+const getValidFilePath = (audioFile) => {
+  if (!audioFile) {
+    throw new Error('Audio file is required');
+  }
 
+  if (typeof audioFile === 'string') {
+    return audioFile;
+  }
+
+  if (typeof audioFile === 'object') {
+    const filePath = audioFile.path || audioFile.filename;
+    if (!filePath) {
+      throw new Error('Invalid audio file object: missing path or filename');
+    }
+    return filePath;
+  }
+
+  throw new Error('Invalid audio file format');
+};
+
+// Create Azure Storage credentials
+const getBlobServiceClient = () => {
+  if (!accountName || !accountKey) {
+    throw new Error('Azure storage credentials are not configured');
+  }
+
+  const sharedKeyCredential = new StorageSharedKeyCredential(accountName, accountKey);
+  return new BlobServiceClient(
+    `https://${accountName}.blob.core.windows.net`,
+    sharedKeyCredential
+  );
+};
+
+async function uploadToAzureStorage(filePath, containerName) {
+  if (!filePath) {
+    throw new Error('File path is required');
+  }
+
+  logger.info(`Uploading file: ${filePath} to container: ${containerName}`);
+
+  try {
+    // Verify file exists and is readable
+    await fs.access(filePath);
+    const fileStats = await fs.stat(filePath);
+    
+    if (fileStats.size === 0) {
+      throw new Error(`File is empty: ${filePath}`);
+    }
+
+    const blobServiceClient = getBlobServiceClient();
+    const containerClient = blobServiceClient.getContainerClient(containerName);
+    await containerClient.createIfNotExists();
+
+    const blobName = `audio-${Date.now()}-${path.basename(filePath)}`;
+    const blockBlobClient = containerClient.getBlockBlobClient(blobName);
+
+    const fileBuffer = await fs.readFile(filePath);
+    await blockBlobClient.upload(fileBuffer, fileBuffer.length);
+    
+    logger.info(`File uploaded successfully: ${blockBlobClient.url}`);
+    return blockBlobClient.url;
+  } catch (error) {
+    logger.error('Azure upload error:', error);
+    throw new Error(`Failed to upload file to Azure: ${error.message}`);
+  }
+}
+
+const seedDatabaseFromAudioFiles = async (audioFiles) => {
+  if (!audioFiles) {
+    throw new Error('Audio files are required');
+  }
+
+  const filesArray = Array.isArray(audioFiles) ? audioFiles : [audioFiles];
   logger.info(`Starting database seeding for ${filesArray.length} files`);
+  
   const processedTracks = [];
   const skippedFiles = [];
 
   for (const audioFile of filesArray) {
     try {
-      // Determine the file path
-      const filePath =
-        typeof audioFile === 'string' ? audioFile : audioFile.path || audioFile.filename;
-
+      // Get and validate file path
+      const filePath = getValidFilePath(audioFile);
       const fileExt = path.extname(filePath).toLowerCase();
 
       // Validate file type
-      if (!['.m4a', '.mp3', '.wav', '.flac'].includes(fileExt)) {
-        logger.warn(`Skipping unsupported file type: ${filePath}`);
+      if (fileExt !== '.m4a') {
+        logger.warn(`Skipping non-m4a file: ${filePath}`);
         skippedFiles.push(filePath);
         continue;
       }
 
-      // Extract metadata from the audio file
-      let audioMetadata;
+      // Upload to Azure Storage
+      const azureFileUrl = await uploadToAzureStorage(filePath, containerName);
+
+      // Extract metadata
+      let audioMetadata = {};
       try {
         audioMetadata = await extractAudioMetadata(filePath);
       } catch (metadataError) {
         logger.warn(`Metadata extraction failed for ${filePath}: ${metadataError.message}`);
-        audioMetadata = {};
       }
-      console.log('test metadata : ', audioMetadata);
 
-      // Generate or retrieve artist
+      // Create or update artist
+      const artistName = audioMetadata.artist || faker.person.fullName();
       const artist = await Artist.findOneAndUpdate(
-        { name: audioMetadata.artist || faker.person.fullName() },
+        { name: artistName },
         {
-          name: audioMetadata.artist || faker.person.fullName(),
+          name: artistName,
           genres: generateGenre(),
           images: 'Profile',
         },
         { upsert: true, new: true }
       );
 
-      // Find or create the album
+      // Create or update album
+      const albumTitle = audioMetadata.album || faker.music.songName();
       const album = await Album.findOneAndUpdate(
         {
-          title: audioMetadata.album || faker.music.songName(),
-          artistId: artist._id, // Use artistId instead of artist
+          title: albumTitle,
+          artistId: artist._id,
         },
         {
-          title: audioMetadata.album || faker.music.songName(),
-          artistId: artist.artistId, // Use artistId instead of artist
+          title: albumTitle,
+          artistId: artist._id,
           releaseDate: audioMetadata.year || faker.date.past().getFullYear(),
-          genre: generateGenre(), // Add genre if you'd like
-          image: 'default_cover_image.jpg', // Example: you can set a default image
+          genre: generateGenre(),
+          image: 'default_cover_image.jpg',
         },
         { upsert: true, new: true }
       );
 
-      // Create track entry
+      // Create track
       const track = await Track.create({
         title: audioMetadata.title || path.basename(filePath, fileExt),
         duration: audioMetadata.duration || null,
-        audioLink: filePath, // Link to the audio file
-        albumId: album._id,  // Linking the track to the album
+        audioLink: azureFileUrl,
+        albumId: album._id,
         isExplicit: faker.datatype.boolean(),
         trackNumber: faker.number.int({ min: 1, max: 12 }),
         numberOfListens: faker.number.int({ min: 0, max: 1000000 }),
         popularity: faker.number.int({ min: 0, max: 100 }),
-        artistId: artist.artistId,  // Linking the track to the artist
+        artistId: artist._id,
       });
 
-      // Push track ID into album's audioTracks array
+      // Update album with new track
+      album.audioTracks = album.audioTracks || [];
       album.audioTracks.push(track._id);
       await album.save();
 
       processedTracks.push(track);
-      logger.info(`Processed track: ${track.title}`);
+      logger.info(`Successfully processed track: ${track.title}`);
 
-      // Optional cleanup of the original files
+      // Clean up local file
       try {
         await fs.unlink(filePath);
+        logger.info(`Deleted local file: ${filePath}`);
       } catch (unlinkError) {
         logger.warn(`Could not delete file ${filePath}: ${unlinkError.message}`);
       }
+
     } catch (error) {
-      logger.error(`Error processing audio file: ${error.message}`);
-      skippedFiles.push(typeof audioFile === 'string' ? audioFile : audioFile.path);
+      logger.error(`Failed to process file: ${error.message}`);
+      skippedFiles.push(audioFile.path || audioFile.filename || audioFile);
     }
   }
 
-  return {
-    totalTracks: processedTracks.length,
-    processedTracks,
-    skippedFiles,
-  };
+  return { processedTracks, skippedFiles };
 };
 
 module.exports = { seedDatabaseFromAudioFiles };
