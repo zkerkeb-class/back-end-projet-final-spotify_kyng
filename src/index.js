@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 const path = require('path');
 // const scheduleBackup = require('./services/backupService.js');
 const { scheduleTemporaryFileCleanup } = require('./services/cleanService.js');
+const cacheMiddleware = require('./middlewares/querycache.js');
 const router = require('./routes/index.js');
 const config = require('./config/config.js')[process.env.NODE_ENV || 'development'];
 const globalRateLimiter = require('./middlewares/rateLimiter.js');
@@ -12,6 +13,8 @@ dotenv.config();
 
 const app = express();
 const port = 8000;
+
+app.use(cacheMiddleware);
 
 // Database connection function
 const connectDB = async () => {
