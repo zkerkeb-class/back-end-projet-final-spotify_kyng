@@ -7,7 +7,8 @@ const {
 const { seedDatabase } = require('../controllers/seed.controller');
 const seedRoutes = require('../routes/seed.route');
 const globalRateLimiter = require('../middlewares/rateLimiter');
-const routeTest = require('./testroute');
+const routeTest = require('./test.route');
+const tracksRoute = require('./track.route');
 
 // // Route for generating a specific number of MP3 metadata entries
 // router.get('/song', generateMp3MetadataController);
@@ -17,7 +18,7 @@ const routeTest = require('./testroute');
 
 router.use('/seed', seedRoutes);
 
-router.use(globalRateLimiter); // Appliquer le middleware de rate limiting globalement
+router.use(globalRateLimiter); 
 router.use(routeTest);
-
+router.use('/track',tracksRoute);
 module.exports = router;

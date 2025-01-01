@@ -1,4 +1,5 @@
 const express = require('express');
+const helmet = require('helmet');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const path = require('path');
@@ -14,6 +15,7 @@ dotenv.config();
 const app = express();
 const port = 8000;
 
+app.use(helmet()); 
 app.use(cacheMiddleware);
 
 // Database connection function
