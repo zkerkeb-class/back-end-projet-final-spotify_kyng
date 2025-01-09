@@ -1,23 +1,19 @@
 const path = require('path');
-require('dotenv').config(); // Charger une seule fois les variables d'environnement
-const mongoose = require('mongoose');
+require('dotenv').config(); 
+//const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
-const User = require('./src/models/user')(mongoose); 
+const User = require('./src/models/user'); 
 const config = require('./src/config/config')[process.env.NODE_ENV || 'development']; 
 
-// Si vous avez un chemin spécifique pour votre fichier .env, vous pouvez l'indiquer dans dotenv.config()
 const envFilePath = path.resolve(__dirname, '.env');
 console.log('Using .env file located at:', envFilePath);
 
-// Le reste de votre code
 const createAdmin = async () => {
   try {
-    // Connexion à MongoDB
     console.log('MongoDB URI:', config.uri);
     if (!config.uri) {
       throw new Error('MONGO_URI is undefined in config.');
     }
-
     await mongoose.connect(config.uri, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
@@ -31,6 +27,7 @@ const createAdmin = async () => {
     }
 
     const hashedPassword = await bcrypt.hash('spotify_kyng', 10);
+    console.log('Hashed password:', hashedPassword);
 
     const admin = new User({
       firstname: 'Admin',
