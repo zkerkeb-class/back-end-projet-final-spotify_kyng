@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
-const redisClient = require('../config/redis'); // Redis importé
-const User = require('../models/user')(require('mongoose')); // Ton modèle utilisateur
+const sessionCacheService = require('../services/sessionCacheService'); 
+const User = require('../models/user')(require('mongoose')); 
 
 const authMiddleware = async (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
@@ -11,9 +11,9 @@ const authMiddleware = async (req, res, next) => {
 
   try {
     // Étape 1 : Vérifie si les données de session sont en cache
-    const cachedSession = await redisClient.get(token);
+    const cachedSession = await sessionCacheService.getSession(token);
     if (cachedSession) {
-      req.user = JSON.parse(cachedSession); // Si trouvé, on parse et on passe
+      req.user = cachedSession; // Si trouvé, on passe directement la session
       return next();
     }
 
@@ -24,9 +24,9 @@ const authMiddleware = async (req, res, next) => {
       throw new Error('User not found');
     }
 
-    // Étape 3 : Stocker les données utilisateur dans Redis avec une expiration
+    // Étape 3 : Stocker les données utilisateur dans le cache avec expiration
     const sessionData = { id: user._id, email: user.email, role: user.role };
-    await redisClient.set(token, JSON.stringify(sessionData), 'EX', 3600); // Expire dans 1 heure
+    await sessionCacheService.setSession(token, sessionData);
 
     req.user = sessionData;
     next();
