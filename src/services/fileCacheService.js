@@ -16,9 +16,10 @@ const getFileFromCache = async (key) => {
 };
 
 // Fonction pour enregistrer un fichier dans le cache
-const setFileInCache = async (key, data, ttl = 3600) => {
+const setFileInCache = async (key, data, ttl = 7200) => {
     try {
         await redisClient.setex(key, ttl, JSON.stringify(data));
+        console.log(`Fichier mis en cache avec succès : ${key}`); 
     } catch (error) {
         console.error('Error saving file to cache:', error);
     }
