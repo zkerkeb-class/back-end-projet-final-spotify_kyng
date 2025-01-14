@@ -10,6 +10,7 @@ const globalRateLimiter = require('../middlewares/rateLimiter');
 const routeTest = require('./test.route');
 const tracksRoute = require('./track.route');
 const authRoutes = require('./auth.route');
+const testauth = require('./testauth');
 
 // // Route for generating a specific number of MP3 metadata entries
 // router.get('/song', generateMp3MetadataController);
@@ -17,6 +18,7 @@ const authRoutes = require('./auth.route');
 // // Route for bulk generation of MP3 metadata entries
 // router.get('/song/bulk', bulkGenerateMp3MetadataController);
 router.use('/auth', authRoutes);
+router.use('/testauth',testauth);
 router.use('/seed', seedRoutes);
 
 router.use(globalRateLimiter); 
