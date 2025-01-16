@@ -1,10 +1,9 @@
 const { seedDatabaseFromAudioFiles } = require('../services/seedService');
 const logger = require('../utils/logger');
 
-const seedDatabase = async (audioDirectory) => {
+const seedDatabase = async (req) => {
   try {
-    
-    console.log('test 1 : ', req.uploadedFiles)
+    console.log('test 1 : ', req.uploadedFiles);
     await seedDatabaseFromAudioFiles(req.uploadedFiles);
     logger.info('Database seeding completed successfully');
   } catch (error) {

@@ -1,6 +1,6 @@
 const authService = require('../services/authService');
-const sessionCacheService = require('../services/sessionCacheService'); 
-const jwt = require('jsonwebtoken'); 
+const sessionCacheService = require('../services/sessionCacheService');
+const jwt = require('jsonwebtoken');
 
 const loginController = async (req, res) => {
   const { email, password } = req.body;

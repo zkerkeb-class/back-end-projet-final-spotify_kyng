@@ -1,6 +1,6 @@
 const trackService = require('../services/trackService');
 const logger = require('../utils/logger');
-const Track = require('../models/Track')(mongoose);
+// const Track = require('../models/Track')(mongoose);
 
 const createTrack = async (req, res) => {
   try {
@@ -146,5 +146,5 @@ module.exports = {
   deleteTrack,
   getTracksByArtist,
   getTracksByAlbum,
-  getTracksByGenre
+  getTracksByGenre,
 };

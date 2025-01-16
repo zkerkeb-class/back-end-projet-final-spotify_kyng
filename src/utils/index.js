@@ -1,7 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
-const path = require('path');
+// const path = require('path');
 // const scheduleBackup = require('./services/backupService.js');
 //const { scheduleTemporaryFileCleanup } = require('./services/cleanService.js');
 const router = require('./routes/index.js');
@@ -33,18 +33,18 @@ const initializeApp = async () => {
     await connectDB();
 
     // Step 2: Configure and start the backup service
-    const backupConfig = {
-      backupDir: path.join(__dirname, 'backups'),
-      s3Bucket: process.env.S3_BUCKET_NAME,
-      dbName: process.env.DB_NAME,
-      notificationUrl: process.env.NOTIFICATION_URL,
-    };
+    // const backupConfig = {
+    //   backupDir: path.join(__dirname, 'backups'),
+    //   s3Bucket: process.env.S3_BUCKET_NAME,
+    //   dbName: process.env.DB_NAME,
+    //   notificationUrl: process.env.NOTIFICATION_URL,
+    // };
 
     // const backupService = new BackupService(backupConfig);
     // backupService.scheduleBackup(); // Schedule backups to run periodically
 
     // scheduleBackup(backupConfig);
-    scheduleTemporaryFileCleanup(path.join(__dirname, 'temp'), 7);
+    // scheduleTemporaryFileCleanup(path.join(__dirname, 'temp'), 7);
 
     console.log('Application initialized successfully');
   } catch (error) {
@@ -54,7 +54,7 @@ const initializeApp = async () => {
 
 app.use(express.json());
 
-app.use("/api", router);
+app.use('/api', router);
 
 const startServer = () => {
   initializeApp();

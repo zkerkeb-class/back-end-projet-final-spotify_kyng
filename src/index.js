@@ -12,16 +12,15 @@ const router = require('./routes/index.js');
 const config = require('./config/config.js')[process.env.NODE_ENV || 'development'];
 const globalRateLimiter = require('./middlewares/rateLimiter.js');
 
-
 dotenv.config();
 
 const app = express();
 const port = 8000;
 
-app.use(helmet()); 
+app.use(helmet());
 //app.use(cookieParser());
 app.use(express.json()); // Pour parser le JSON dans les requêtes
-app.use(express.urlencoded({ extended: true }));// Pour parser les données de formulaire
+app.use(express.urlencoded({ extended: true })); // Pour parser les données de formulaire
 //const csrfProtection = csurf({ cookie: true });
 //app.use(csrfProtection);
 app.use(cacheMiddleware);
@@ -47,12 +46,12 @@ const initializeApp = async () => {
     await connectDB();
 
     // Step 2: Configure and start the backup service
-    const backupConfig = {
-      backupDir: path.join(__dirname, 'backups'),
-      s3Bucket: process.env.S3_BUCKET_NAME,
-      dbName: process.env.DB_NAME,
-      notificationUrl: process.env.NOTIFICATION_URL,
-    };
+    // const backupConfig = {
+    //   backupDir: path.join(__dirname, 'backups'),
+    //   s3Bucket: process.env.S3_BUCKET_NAME,
+    //   dbName: process.env.DB_NAME,
+    //   notificationUrl: process.env.NOTIFICATION_URL,
+    // };
 
     // const backupService = new BackupService(backupConfig);
     // backupService.scheduleBackup(); // Schedule backups to run periodically
@@ -81,7 +80,7 @@ app.use((err, req, res, next) => {
   }
   next(err);
 });*/
-app.use("/api", router);
+app.use('/api', router);
 
 const startServer = () => {
   initializeApp();

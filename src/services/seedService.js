@@ -8,8 +8,6 @@ const fs = require('fs').promises;
 const dotenv = require('dotenv');
 dotenv.config({ path: '.env.dev' }); // Explicitly load .env.dev
 
-
-
 const Artist = require('../models/Artist')(mongoose);
 const Album = require('../models/Album')(mongoose);
 const Track = require('../models/Track')(mongoose);
@@ -17,14 +15,26 @@ const Track = require('../models/Track')(mongoose);
 const accountName = process.env.AZURE_STORAGE_ACCOUNT_NAME;
 const accountKey = process.env.AZURE_STORAGE_ACCOUNT_KEY;
 
-console.log('test : ', accountName, accountKey)
+console.log('test : ', accountName, accountKey);
 const containerName = 'spotify';
 
 const generateGenre = () => {
   const genres = [
-    'Rock', 'Pop', 'Jazz', 'Classical', 'Hip Hop',
-    'Electronic', 'R&B', 'Folk', 'Country', 'Blues',
-    'Soul', 'Reggae', 'Metal', 'Punk', 'Alternative'
+    'Rock',
+    'Pop',
+    'Jazz',
+    'Classical',
+    'Hip Hop',
+    'Electronic',
+    'R&B',
+    'Folk',
+    'Country',
+    'Blues',
+    'Soul',
+    'Reggae',
+    'Metal',
+    'Punk',
+    'Alternative',
   ];
   return faker.helpers.arrayElement(genres);
 };
@@ -57,10 +67,7 @@ const getBlobServiceClient = () => {
   }
 
   const sharedKeyCredential = new StorageSharedKeyCredential(accountName, accountKey);
-  return new BlobServiceClient(
-    `https://${accountName}.blob.core.windows.net`,
-    sharedKeyCredential
-  );
+  return new BlobServiceClient(`https://${accountName}.blob.core.windows.net`, sharedKeyCredential);
 };
 
 async function uploadToAzureStorage(filePath, containerName) {
@@ -74,7 +81,7 @@ async function uploadToAzureStorage(filePath, containerName) {
     // Verify file exists and is readable
     await fs.access(filePath);
     const fileStats = await fs.stat(filePath);
-    
+
     if (fileStats.size === 0) {
       throw new Error(`File is empty: ${filePath}`);
     }
@@ -88,7 +95,7 @@ async function uploadToAzureStorage(filePath, containerName) {
 
     const fileBuffer = await fs.readFile(filePath);
     await blockBlobClient.upload(fileBuffer, fileBuffer.length);
-    
+
     logger.info(`File uploaded successfully: ${blockBlobClient.url}`);
     return blockBlobClient.url;
   } catch (error) {
@@ -104,7 +111,7 @@ const seedDatabaseFromAudioFiles = async (audioFiles) => {
 
   const filesArray = Array.isArray(audioFiles) ? audioFiles : [audioFiles];
   logger.info(`Starting database seeding for ${filesArray.length} files`);
-  
+
   const processedTracks = [];
   const skippedFiles = [];
 
@@ -189,7 +196,6 @@ const seedDatabaseFromAudioFiles = async (audioFiles) => {
       } catch (unlinkError) {
         logger.warn(`Could not delete file ${filePath}: ${unlinkError.message}`);
       }
-
     } catch (error) {
       logger.error(`Failed to process file: ${error.message}`);
       skippedFiles.push(audioFile.path || audioFile.filename || audioFile);

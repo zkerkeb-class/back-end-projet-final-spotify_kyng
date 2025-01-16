@@ -24,7 +24,7 @@ module.exports = (mongoose) => {
       },
       role: {
         type: String,
-        enum: ['user', 'artist', 'admin'], 
+        enum: ['user', 'artist', 'admin'],
         default: 'user',
       },
       password: {
@@ -45,10 +45,8 @@ module.exports = (mongoose) => {
       },
     },
     {
-      timestamps: true, 
+      timestamps: true,
     }
   );
   return mongoose.models.User || mongoose.model('User', userSchema);
 };
-
-

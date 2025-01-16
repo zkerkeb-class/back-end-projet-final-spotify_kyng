@@ -1,8 +1,8 @@
 const albumService = require('../services/albumService');
 const logger = require('../utils/logger');
-const mongoose = require('mongoose');
+// const mongoose = require('mongoose');
 
-const Album = require('../models/Album')(mongoose);
+// const Album = require('../models/Album')(mongoose);
 
 const createAlbum = async (req, res) => {
   try {

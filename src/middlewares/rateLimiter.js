@@ -9,13 +9,13 @@ const redisClient = new Redis({
 
 const globalRateLimiter = rateLimit({
   store: new RedisStore({
-    sendCommand: (...args) => redisClient.call(...args), 
+    sendCommand: (...args) => redisClient.call(...args),
   }),
-  windowMs: 15 * 60 * 1000, 
-  max: 100, 
+  windowMs: 15 * 60 * 1000,
+  max: 100,
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
-  legacyHeaders: false, 
+  legacyHeaders: false,
 });
 
 module.exports = globalRateLimiter;

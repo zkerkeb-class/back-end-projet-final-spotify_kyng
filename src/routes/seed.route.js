@@ -5,8 +5,8 @@ const { seedDatabase } = require('../controllers/seed.controller');
 const audioMiddleware = require('../cdn/middlewares/audioMiddleware');
 const { seedDatabaseFromAudioFiles } = require('../services/seedService');
 
-const path = require('path');  // Import path module
-const { optimizeAudio } = require('../cdn/scripts/audioOptimizer');
+// const path = require('path'); // Import path module
+// const { optimizeAudio } = require('../cdn/scripts/audioOptimizer');
 
 router.post('/seed', async (req, res) => {
   const { audioDirectory } = req.body;
@@ -26,17 +26,20 @@ router.post('/upload-multiple-music', audioMiddleware, async (req, res) => {
       return res.status(400).json({ error: 'No files uploaded' });
     }
 
-    console.log('Uploaded files:', uploadedFiles.map(file => ({
-      originalName: file.originalName,
-      path: file.path,
-      convertedPath: file.convertedPath
-    })));
+    console.log(
+      'Uploaded files:',
+      uploadedFiles.map((file) => ({
+        originalName: file.originalName,
+        path: file.path,
+        convertedPath: file.convertedPath,
+      }))
+    );
 
     const results = await Promise.all(
       uploadedFiles.map(async (uploadedFile) => {
         // Ensure we're using the converted path
         const fileToUpload = uploadedFile.convertedPath || uploadedFile.path;
-        
+
         if (!fileToUpload) {
           console.error('No file path found for upload', uploadedFile);
           return null;
@@ -53,10 +56,13 @@ router.post('/upload-multiple-music', audioMiddleware, async (req, res) => {
     );
 
     // Filter out any null results
-    const validResults = results.filter(result => result !== null);
+    const validResults = results.filter((result) => result !== null);
 
     const totalTracks = validResults.reduce((acc, result) => acc + (result.totalTracks || 0), 0);
-    const processedTracks = validResults.reduce((acc, result) => acc + (result.processedTracks || []).length, 0);
+    const processedTracks = validResults.reduce(
+      (acc, result) => acc + (result.processedTracks || []).length,
+      0
+    );
 
     res.json({
       message: 'Music files processed successfully',
@@ -71,9 +77,5 @@ router.post('/upload-multiple-music', audioMiddleware, async (req, res) => {
     });
   }
 });
-
-
-
-
 
 module.exports = router;

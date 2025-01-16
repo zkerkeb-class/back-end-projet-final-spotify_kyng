@@ -4,7 +4,7 @@ module.exports = (mongoose) => {
       // Playlist pistes
       pistes_audio: {
         type: String,
-        required: true
+        required: true,
       },
       thumbnail: {
         type: String,
@@ -15,12 +15,11 @@ module.exports = (mongoose) => {
         min: 0,
       },
       description: {
-        type: String
+        type: String,
       },
       titre: {
-        type: Nulmber,
+        type: Number,
       },
-      
     },
     {
       timestamps: true,

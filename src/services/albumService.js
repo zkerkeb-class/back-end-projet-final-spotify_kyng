@@ -3,6 +3,11 @@ const mongoose = require('mongoose');
 const Album = require('../models/Album')(mongoose);
 const Joi = require('joi');
 const logger = require('../utils/logger');
+const Redis = require('ioredis');
+const redisClient = new Redis({
+  host: process.env.REDIS_HOST,
+  port: process.env.REDIS_PORT,
+});
 
 const albumSchema = Joi.object({
   title: Joi.string().required().trim(),
@@ -134,7 +139,7 @@ const deleteAlbum = async (id) => {
 
     return deleteAlbum;
   } catch (error) {
-    logger.error(`Error deleting album: ${err.message}.`);
+    logger.error(`Error deleting album: ${error.message}.`);
     throw error;
   }
 };
@@ -178,7 +183,7 @@ const getAlbumsByArtist = async (artistId, page = 1, limit = 10) => {
 
 const getAlbumsByGenre = async (genre, page = 1, limit = 10) => {
   try {
-    const cacheKey = `albums:genre:${genre}:page:${page}:limit:${limit}`;
+    // const cacheKey = `albums:genre:${genre}:page:${page}:limit:${limit}`;
     // const cachedData = await redisClient.get(cacheKey);
 
     // if (cachedData) {
@@ -216,5 +221,5 @@ module.exports = {
   updatedAlbum,
   deleteAlbum,
   getAlbumsByArtist,
-  getAlbumsByGenre
+  getAlbumsByGenre,
 };

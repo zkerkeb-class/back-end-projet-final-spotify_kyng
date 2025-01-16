@@ -1,7 +1,14 @@
+const mongoose = require('mongoose');
 const Track = require('../models/Track')(mongoose);
 const Joi = require('joi');
 const logger = require('../utils/logger');
-const Playlist = require('../models/Playlist');
+// const Playlist = require('../models/Playlist');
+
+const Redis = require('ioredis');
+const redisClient = new Redis({
+  host: process.env.REDIS_HOST,
+  port: process.env.REDIS_PORT,
+});
 
 const trackSchema = Joi.object({
   title: Joi.string().required().trim(),
@@ -138,7 +145,7 @@ const deleteTrack = async (id) => {
 
     return deleteTrack;
   } catch (error) {
-    logger.error(`Error deleting track: ${err.message}.`);
+    logger.error(`Error deleting track: ${error.message}.`);
     throw error;
   }
 };
@@ -156,9 +163,9 @@ const getTracksByArtist = async (artistId, page = 1, limit = 10) => {
     const skip = (page - 1) * limit;
 
     // Fetch tracks filtered by artist
-    const tracks = await TrackModel.find({ artistId }).skip(skip).limit(limit);
+    const tracks = await Track.find({ artistId }).skip(skip).limit(limit);
 
-    const totalCount = await TrackModel.countDocuments({ artistId });
+    const totalCount = await Track.countDocuments({ artistId });
 
     const result = {
       tracks,
@@ -256,5 +263,5 @@ module.exports = {
   deleteTrack,
   getTracksByArtist,
   getTracksByAlbum,
-  getTracksByGenre
+  getTracksByGenre,
 };

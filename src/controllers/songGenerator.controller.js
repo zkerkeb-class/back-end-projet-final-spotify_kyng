@@ -23,14 +23,14 @@ const generateAudioFile = (trackTitle) => {
         // Use ffmpeg to generate a synthetic audio file
         // This is a basic example - you might want to use a more sophisticated audio generation method
         const command = `ffmpeg -f lavfi -i sine=frequency=440:duration=30 -c:a libmp3lame -b:a 128k ${filepath}`;
-        
-        exec(command, (error, stdout, stderr) => {
+
+        exec(command, (error) => {
           if (error) {
             console.error('Audio generation error:', error);
             reject(error);
             return;
           }
-          
+
           // Return the relative path to the audio file
           resolve(`/songs/${filename}`);
         });
@@ -46,9 +46,14 @@ const generateSingleMp3Metadata = async () => {
     const artist = await Artist.create({
       name: faker.person.fullName(),
       genres: faker.helpers.arrayElement([
-        'Rock', 'Pop', 'Jazz', 'Classical', 
-        'Hip Hop', 'Electronic', 'R&B'
-      ])
+        'Rock',
+        'Pop',
+        'Jazz',
+        'Classical',
+        'Hip Hop',
+        'Electronic',
+        'R&B',
+      ]),
     });
 
     // Create Album
@@ -56,13 +61,11 @@ const generateSingleMp3Metadata = async () => {
       title: faker.music.songName(),
       artistId: artist.id,
       releaseDate: faker.date.past({ years: 30 }),
-      genre: artist.genres
+      genre: artist.genres,
     });
 
     // Generate audio file
-    const audioLink = await generateAudioFile(
-      `${artist.name} - ${album.title}`
-    );
+    const audioLink = await generateAudioFile(`${artist.name} - ${album.title}`);
 
     // Create Track with actual audio link
     const track = await Track.create({
@@ -74,7 +77,7 @@ const generateSingleMp3Metadata = async () => {
       isExplicit: faker.datatype.boolean({ probability: 0.2 }),
       trackNumber: faker.number.int({ min: 1, max: 12 }),
       numberOfListens: faker.number.int({ min: 0, max: 1000000 }),
-      popularity: faker.number.int({ min: 0, max: 100 })
+      popularity: faker.number.int({ min: 0, max: 100 }),
     });
 
     return { artist, album, track };
@@ -92,17 +95,17 @@ const generateMp3MetadataController = async (req, res) => {
 
     res.json({
       message: `Generated ${generatedEntries.length} MP3 metadata entries`,
-      entries: generatedEntries.map(entry => ({
+      entries: generatedEntries.map((entry) => ({
         title: entry.track.title,
         artist: entry.artist.name,
         album: entry.album.title,
-        audioLink: entry.track.audioLink
-      }))
+        audioLink: entry.track.audioLink,
+      })),
     });
   } catch (error) {
     res.status(500).json({
       error: 'Failed to generate MP3 metadata',
-      details: error.message
+      details: error.message,
     });
   }
 };
@@ -115,12 +118,12 @@ const bulkGenerateMp3MetadataController = async (req, res) => {
 
     res.json({
       message: `Bulk generated ${generatedEntries.length} MP3 metadata entries`,
-      totalTracks: generatedEntries.length
+      totalTracks: generatedEntries.length,
     });
   } catch (error) {
     res.status(500).json({
       error: 'Failed to bulk generate MP3 metadata',
-      details: error.message
+      details: error.message,
     });
   }
 };
@@ -128,7 +131,7 @@ const bulkGenerateMp3MetadataController = async (req, res) => {
 // Existing multiple metadata generation function
 const generateMultipleMp3Metadatas = async (count) => {
   const generated = [];
-  
+
   for (let i = 0; i < count; i++) {
     try {
       const entry = await generateSingleMp3Metadata();
@@ -143,5 +146,5 @@ const generateMultipleMp3Metadatas = async (count) => {
 
 module.exports = {
   generateMp3MetadataController,
-  bulkGenerateMp3MetadataController
+  bulkGenerateMp3MetadataController,
 };

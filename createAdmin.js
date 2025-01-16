@@ -1,9 +1,9 @@
 const path = require('path');
-require('dotenv').config(); 
-//const mongoose = require('mongoose');
+require('dotenv').config();
+const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
-const User = require('./src/models/user'); 
-const config = require('./src/config/config')[process.env.NODE_ENV || 'development']; 
+const User = require('./src/models/user');
+const config = require('./src/config/config')[process.env.NODE_ENV || 'development'];
 
 const envFilePath = path.resolve(__dirname, '.env');
 console.log('Using .env file located at:', envFilePath);

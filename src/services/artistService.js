@@ -1,6 +1,12 @@
+const mongoose = require('mongoose');
 const Artist = require('../models/Artist')(mongoose);
 const Joi = require('joi');
 const logger = require('../utils/logger');
+const Redis = require('ioredis');
+const redisClient = new Redis({
+  host: process.env.REDIS_HOST,
+  port: process.env.REDIS_PORT,
+});
 
 const artistSchema = Joi.object({
   name: Joi.string().required().trim(),
@@ -42,7 +48,6 @@ const getAllArtists = async (page = 1, limit = 10) => {
 
     const skip = (page - 1) * limit;
     const totalCount = await Artist.countDocuments();
-
 
     const artists = await Artist.find().skip(skip).limit(limit);
 
@@ -127,7 +132,7 @@ const deleteArtist = async (id) => {
 
     return deleteArtist;
   } catch (error) {
-    logger.error(`Error deleting artist: ${err.message}.`);
+    logger.error(`Error deleting artist: ${error.message}.`);
     throw error;
   }
 };
@@ -166,5 +171,5 @@ const getArtistsByGenre = async (genre, page = 1, limit = 10) => {
 };
 
 module.exports = () => {
-  createArtist, getAllArtists, getArtistById, updatedArtist, deleteArtist, getArtistsByGenre
+  createArtist, getAllArtists, getArtistById, updatedArtist, deleteArtist, getArtistsByGenre;
 };

@@ -83,11 +83,11 @@ module.exports = (mongoose) => {
           'Malhoun',
           'Zajal',
           'Baladi',
-        ]
+        ],
       },
       // Image types
       images: {
-        type: String
+        type: String,
       },
     },
     {

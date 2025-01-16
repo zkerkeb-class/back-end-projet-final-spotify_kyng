@@ -19,7 +19,7 @@ const connectDB = async () => {
   try {
     await mongoose.connect(mongoURI, {
       useNewUrlParser: true,
-      useUnifiedTopology: true
+      useUnifiedTopology: true,
     });
     console.log(`MongoDB connected successfully to ${mongoURI}`);
   } catch (err) {
@@ -29,19 +29,17 @@ const connectDB = async () => {
 };
 
 // Dynamically import models
-const modelFiles = fs
-  .readdirSync(__dirname)
-  .filter(file => {
-    return (
-      file.indexOf('.') !== 0 &&
-      file !== basename &&
-      file.slice(-3) === '.js' &&
-      file.indexOf('.test.js') === -1
-    );
-  });
+const modelFiles = fs.readdirSync(__dirname).filter((file) => {
+  return (
+    file.indexOf('.') !== 0 &&
+    file !== basename &&
+    file.slice(-3) === '.js' &&
+    file.indexOf('.test.js') === -1
+  );
+});
 
 // Load models
-modelFiles.forEach(file => {
+modelFiles.forEach((file) => {
   const modelPath = path.join(__dirname, file);
   const model = require(modelPath)(mongoose); // Adapt for Mongoose
   db[model.modelName] = model; // Add to db object

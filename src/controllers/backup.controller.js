@@ -14,7 +14,7 @@ const initiateBackup = async (req, res) => {
     logger.error('Backup initiation failed', error);
     res.status(500).json({ message: 'Backup initiation failed', error: error.message });
   }
-}
+};
 
 // Handle starting scheduled backups
 const startScheduledBackups = async (req, res) => {
@@ -29,7 +29,7 @@ const startScheduledBackups = async (req, res) => {
     logger.error('Error starting scheduled backups', error);
     res.status(500).json({ message: 'Error starting scheduled backups', error: error.message });
   }
-}
+};
 
 module.exports = {
   initiateBackup,

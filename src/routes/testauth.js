@@ -5,7 +5,7 @@ const authMiddleware = require('../middlewares/authMiddleware');
 router.get('/test-auth', authMiddleware, (req, res) => {
   res.status(200).json({
     message: 'Utilisateur authentifié',
-    user: req.user, 
+    user: req.user,
   });
 });
 

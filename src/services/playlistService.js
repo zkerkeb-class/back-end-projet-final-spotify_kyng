@@ -1,6 +1,13 @@
+const mongoose = require('mongoose');
 const Playlist = require('../models/Playlist')(mongoose);
 const Joi = require('joi');
 const logger = require('../utils/logger');
+
+const Redis = require('ioredis');
+const redisClient = new Redis({
+  host: process.env.REDIS_HOST,
+  port: process.env.REDIS_PORT,
+});
 
 const playlistSchema = Joi.object({
   pistes_audio: Joi.string().required(),
@@ -9,7 +16,7 @@ const playlistSchema = Joi.object({
   description: Joi.string().optional(),
   titre: Joi.number().optional(),
 });
-    
+
 const createPlaylist = async (data) => {
   try {
     const { error, value } = playlistSchema.validate(data);
@@ -127,7 +134,7 @@ const deletePlaylist = async (id) => {
 
     return deletePlaylist;
   } catch (error) {
-    logger.error(`Error deleting track: ${err.message}.`);
+    logger.error(`Error deleting track: ${error.message}.`);
     throw error;
   }
 };

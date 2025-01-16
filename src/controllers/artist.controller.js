@@ -1,8 +1,8 @@
 const artistService = require('../services/artistService');
 const logger = require('../utils/logger');
-const mongoose = require('mongoose');
+// const mongoose = require('mongoose');
 
-const Artist = require('../models/Artist')(mongoose);
+// const Artist = require('../models/Artist')(mongoose);
 
 const createArtist = async (req, res) => {
   try {
@@ -104,5 +104,10 @@ const getArtistsByGenre = async (req, res) => {
 };
 
 module.exports = {
-  createArtist, getAllArtist, getArtistById, updatedArtist, deleteArtist, getArtistsByGenre
+  createArtist,
+  getAllArtist,
+  getArtistById,
+  updatedArtist,
+  deleteArtist,
+  getArtistsByGenre,
 };

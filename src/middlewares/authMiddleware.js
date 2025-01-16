@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
-const sessionCacheService = require('../services/sessionCacheService'); 
-const User = require('../models/user')(require('mongoose')); 
+const sessionCacheService = require('../services/sessionCacheService');
+const User = require('../models/user')(require('mongoose'));
 
 const authMiddleware = async (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];

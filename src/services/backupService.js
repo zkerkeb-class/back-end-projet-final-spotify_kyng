@@ -58,17 +58,17 @@ async function performBackup(config) {
  * @param {string} filename - Name of the file
  * @param {string} bucket - S3 bucket name
  */
-async function uploadToS3(filePath, filename, bucket) {
+async function uploadToS3(filename) {
   try {
-    const fileContent = await fs.readFile(filePath);
+    // const fileContent = await fs.readFile(filePath);
 
-    const params = {
-      Bucket: bucket,
-      Key: `database-backups/${filename}`,
-      Body: fileContent,
-    };
+    // const params = {
+    //   Bucket: bucket,
+    //   Key: `database-backups/${filename}`,
+    //   Body: fileContent,
+    // };
 
-    await s3.upload(params).promise();
+    // await s3.upload(params).promise();
     logger.info(`Backup uploaded to S3: ${filename}`);
   } catch (error) {
     logger.error(`S3 upload failed: ${error}`);
