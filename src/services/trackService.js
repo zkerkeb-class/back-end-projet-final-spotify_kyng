@@ -2,6 +2,8 @@ const mongoose = require('mongoose');
 const Track = require('../models/Track')(mongoose);
 const Joi = require('joi');
 const logger = require('../utils/logger');
+const { extractAudioMetadata } = require('../utils/metadataExtractor');
+const { uploadToAzureStorage } = require('./seedService');
 // const Playlist = require('../models/Playlist');
 
 const Redis = require('ioredis');
@@ -13,7 +15,7 @@ const redisClient = new Redis({
 const trackSchema = Joi.object({
   title: Joi.string().required().trim(),
   duration: Joi.number().required().min(0),
-  audioLink: Joi.string().uri().required(),
+  audioFile: Joi.object().required(),
   albumId: Joi.string().optional(),
   isExplicit: Joi.boolean().optional(),
   lyrics: Joi.string().optional(),
@@ -25,7 +27,8 @@ const trackSchema = Joi.object({
   trackNumber: Joi.number().optional(),
 });
 
-// TODO ajouter la compression de l'audio puis le stockage dans azure et enfin le stockage en db.
+
+// TODO : Ajouter les audios dans azure puis db
 const createTrack = async (data) => {
   try {
     const { error, value } = trackSchema.validate(data);
@@ -34,11 +37,51 @@ const createTrack = async (data) => {
       throw new Error(error.details[0].message);
     }
 
-    const track = await Track.create(value);
+    const { audioFile, ...trackData } = value;
+    const filePath = audioFile.path;
+    const fileExt = filePath.split('.').pop().toLowerCase();
 
-    // ici invalider (delete) le cache du getAllTrack
+    // Validate file type
+    if (fileExt !== 'm4a') {
+      throw new Error('Only .m4a files are supported.');
+    }
 
-    logger.info('Track created successfully.');
+    // Upload to Azure
+    const azureFileUrl = await uploadToAzureStorage(filePath, 'spotify');
+
+    // Extract Metadata
+    let audioMetadata = {};
+    try {
+      audioMetadata = await extractAudioMetadata(filePath);
+    } catch (err) {
+      logger.warn(`Metadata extraction failed for ${filePath}: ${err.message}`);
+    }
+
+    const trackDuration = audioMetadata.duration || null;
+    const trackTitle = trackData.title || audioMetadata.title || 'Untitled';
+
+    // Populate Track Data
+    const trackPayload = {
+      title: trackTitle,
+      duration: trackDuration,
+      audioLink: azureFileUrl,
+      albumId: trackData.albumId || null,
+      isExplicit: trackData.isExplicit || false,
+      lyrics: trackData.lyrics || null,
+      artistId: trackData.artistId || null,
+      collaborators: trackData.collaborators || null,
+      credits: trackData.credits || null,
+      numberOfListens: trackData.numberOfListens || 0,
+      popularity: trackData.popularity || 0,
+      trackNumber: trackData.trackNumber || null,
+    };
+
+    // Save Track
+    const track = await Track.create(trackPayload);
+
+    // Invalidate Cache (Optional)
+    // redisClient.del('tracks:all'); // Invalidate all tracks cache
+    logger.info('Track created and cache invalidated.');
 
     return track;
   } catch (error) {

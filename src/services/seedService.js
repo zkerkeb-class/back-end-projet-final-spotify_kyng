@@ -205,4 +205,4 @@ const seedDatabaseFromAudioFiles = async (audioFiles) => {
   return { processedTracks, skippedFiles };
 };
 
-module.exports = { seedDatabaseFromAudioFiles };
+module.exports = { seedDatabaseFromAudioFiles, uploadToAzureStorage };

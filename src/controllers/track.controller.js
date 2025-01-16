@@ -1,19 +1,55 @@
 const trackService = require('../services/trackService');
 const logger = require('../utils/logger');
+const multer = require('multer');
+
+const upload = multer({ dest: 'uploads/' });
+
 // const Track = require('../models/Track')(mongoose);
 
 const createTrack = async (req, res) => {
-  try {
-    const track = await trackService.createTrack(req.body);
-    logger.info(`Track creation request handled successfully.`);
+  console.log("req.files:", req.files);
 
+  try {
+    // Log the entire req.files to check if the file is being passed properly
+
+    // Check if the file exists in the 'files' object
+    if (!req.files || !req.files.audioFile) {
+      throw new Error('Audio file is required.');
+    }
+
+    // Get the file and other form-data
+    const { title, duration, albumId, isExplicit, lyrics, artistId, collaborators, credits, numberOfListens, popularity, trackNumber } = req.body;
+    const audioFile = req.files.audioFile; // This will hold the uploaded audio file
+
+    // Log the audio file
+    console.log("Audio file:", audioFile);
+
+    // Prepare data for the service
+    const trackData = {
+      title,
+      duration,
+      albumId,
+      isExplicit,
+      lyrics,
+      artistId,
+      collaborators,
+      credits,
+      numberOfListens,
+      popularity,
+      trackNumber,
+      audioFile,  // Send the audio file data to the service
+    };
+
+    // Call the service to create the track
+    const track = await trackService.createTrack(trackData);
+
+    console.log(`Track creation request handled successfully.`);
     res.status(201).json(track);
   } catch (error) {
-    logger.error(`Error in createTrack: ${error.message}.`);
-
+    console.error(`Error in createTrack: ${error.message}.`);
     res.status(400).json({ error: error.message });
   }
-};
+}
 
 const getAllTrack = async (req, res) => {
   try {
