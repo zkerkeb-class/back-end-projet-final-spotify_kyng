@@ -1,0 +1,21 @@
+name: back CI
+
+on:
+  pull_request: 
+    branches: ['main']
+
+jobs: 
+  build:
+    runs-on: ubuntu-latest
+    strategy: 
+      matrix: 
+        node-version: [18.x]
+    steps: 
+    - uses: actions/checkout@v3
+    - name: Use back ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    - run: npm ci
+    - run: npm run lint
