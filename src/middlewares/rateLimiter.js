@@ -12,7 +12,7 @@ const globalRateLimiter = rateLimit({
     sendCommand: (...args) => redisClient.call(...args),
   }),
   windowMs: 15 * 60 * 1000,
-  max: 100,
+  max: 10,
   message: 'Too many requests from this IP, please try again later.',
   standardHeaders: true,
   legacyHeaders: false,
