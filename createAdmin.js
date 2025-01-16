@@ -1,7 +1,7 @@
 const path = require('path');
 require('dotenv').config();
 const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const User = require('./src/models/user');
 const config = require('./src/config/config')[process.env.NODE_ENV || 'development'];
 
