@@ -1,22 +1,18 @@
-const redisClient = require('../config/redis');
 const authService = require('../services/authService');
-const jwt = require('jsonwebtoken'); // Ajoute ceci si non inclus
+const sessionCacheService = require('../services/sessionCacheService'); 
+const jwt = require('jsonwebtoken'); 
 
 const loginController = async (req, res) => {
   const { email, password } = req.body;
   try {
     const token = await authService.loginUser(email, password);
-
-    // Décodage du token pour obtenir les informations de session
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const sessionData = { id: decoded.id, email: decoded.email, role: decoded.role };
 
-    // Utilisation d'un préfixe pour la clé Redis afin d'identifier les sessions utilisateur
-    const redisKey = `user_session:${token}`; // Clé formatée pour la session de l'utilisateur
-    await redisClient.set(redisKey, JSON.stringify(sessionData), 'EX', 3600); // Expire dans 1 heure
-
+    await sessionCacheService.setSession(token, sessionData);
     res.status(200).json({ token });
   } catch (error) {
+    console.error('Erreur lors du login:', error.message);
     res.status(400).json({ message: error.message });
   }
 };
@@ -27,17 +23,8 @@ const logoutController = async (req, res) => {
   if (!token) {
     return res.status(400).json({ message: 'Token manquant.' });
   }
-
   try {
-    // Création de la clé Redis avec le préfixe
-    const redisKey = `user_session:${token}`; // Clé formatée pour la session de l'utilisateur
-
-    // Suppression du token de Redis
-    const result = await redisClient.del(redisKey);
-    console.log('Token supprimé de Redis :', result);
-
-    const keys = await redisClient.keys('*'); // Récupère toutes les clés
-    console.log('Clés restantes dans Redis :', keys); // Affiche les clés restantes après suppression
+    const result = await sessionCacheService.deleteSession(token);
 
     if (result === 0) {
       return res.status(400).json({ message: 'Token non trouvé dans le cache.' });
@@ -45,7 +32,7 @@ const logoutController = async (req, res) => {
 
     res.status(200).json({ message: 'Déconnexion réussie.' });
   } catch (error) {
-    console.error('Erreur lors de la déconnexion :', error.message);
+    console.error('Erreur lors de la déconnexion:', error.message);
     res.status(500).json({ message: 'Erreur interne lors de la déconnexion.' });
   }
 };
@@ -54,9 +41,11 @@ const logoutController = async (req, res) => {
   const { firstname, lastname, email, phone, password, role } = req.body;
 
   try {
+    // Appel du service d'authentification pour créer un utilisateur
     const user = await authService.createUser({ firstname, lastname, email, phone, password, role });
-    res.status(201).json({ message: 'User created successfully', user });
+    res.status(201).json({ message: 'Utilisateur créé avec succès', user });
   } catch (error) {
+    console.error('Erreur lors de la création de l\'utilisateur:', error.message);
     res.status(400).json({ message: error.message });
   }
 };*/
