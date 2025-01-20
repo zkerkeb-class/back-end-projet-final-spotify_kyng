@@ -10,7 +10,7 @@ const cacheFileMiddleware = async (req, res, next) => {
     if (cachedFile) {
       console.log('Cache hit (fichier)');
       const buffer = Buffer.from(cachedFile, 'base64');
-      console.log('Buffer généré à partir du cache :', buffer); // Convertir le fichier en buffer
+      console.log('Buffer généré à partir du cache :', buffer); 
       res.set('Content-Type', 'audio/m4a');
       return res.send(buffer);
     }
@@ -37,7 +37,7 @@ const addFileToCache = async (req, res) => {
     await setFileInCache(key, fileBuffer.toString('base64'), 3600);
 
     res.set('Content-Type', 'audio/m4a');
-    res.send(fileBuffer); // Répondre avec le fichier
+    res.send(fileBuffer); 
   } catch (error) {
     console.error('Erreur lors de la lecture du fichier:', error);
     res.status(404).send('Fichier introuvable.');

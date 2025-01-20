@@ -1,8 +1,4 @@
-const Redis = require('ioredis');
-const redisClient = new Redis({
-  host: process.env.REDIS_HOST,
-  port: process.env.REDIS_PORT,
-});
+const redisClient = require('../config/redis');
 
 // routes à exclure du cache (cache de session)
 //const excludedRoutes = ['/login','/register'];

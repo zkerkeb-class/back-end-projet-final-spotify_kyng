@@ -2,13 +2,9 @@ const mongoose = require('mongoose');
 const Track = require('../models/Track')(mongoose);
 const Joi = require('joi');
 const logger = require('../utils/logger');
+const redisClient = require('../config/redis');
 // const Playlist = require('../models/Playlist');
 
-const Redis = require('ioredis');
-const redisClient = new Redis({
-  host: process.env.REDIS_HOST,
-  port: process.env.REDIS_PORT,
-});
 
 const trackSchema = Joi.object({
   title: Joi.string().required().trim(),

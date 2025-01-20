@@ -67,7 +67,6 @@ const initializeApp = async () => {
 
 app.use(express.json());
 
-//middleware rate limiting application
 app.use(globalRateLimiter);
 
 /*app.get('/api/csrf-token', csrfProtection, (req, res) => {
