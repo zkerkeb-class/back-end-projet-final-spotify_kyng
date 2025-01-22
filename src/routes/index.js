@@ -23,7 +23,7 @@ router.use('/testauth', testauth);
 router.use('/seed', seedRoutes);
 router.use('/album', albumRoutes);
 
-router.use(globalRateLimiter);
+//router.use(globalRateLimiter);
 router.use(routeTest);
 router.use('/track', tracksRoute);
 module.exports = router;

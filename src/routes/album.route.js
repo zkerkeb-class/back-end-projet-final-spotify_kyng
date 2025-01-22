@@ -6,4 +6,5 @@ const authMiddleware = require('../middlewares/authMiddleware');
 
 router.get('/genre/:genre', authMiddleware, controller.getAlbumsByGenre);
 
+
 module.exports = router;

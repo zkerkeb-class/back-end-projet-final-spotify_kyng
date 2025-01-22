@@ -15,9 +15,10 @@ const globalRateLimiter = require('./middlewares/rateLimiter.js');
 dotenv.config();
 
 const app = express();
-const port = 8000;
+const port = 3000;
 
 app.use(helmet());
+app.use(globalRateLimiter);
 //app.use(cookieParser());
 app.use(express.json()); // Pour parser le JSON dans les requêtes
 app.use(express.urlencoded({ extended: true })); // Pour parser les données de formulaire
@@ -67,7 +68,7 @@ const initializeApp = async () => {
 
 app.use(express.json());
 
-app.use(globalRateLimiter);
+//app.use(globalRateLimiter);
 
 /*app.get('/api/csrf-token', csrfProtection, (req, res) => {
   res.json({ csrfToken: req.csrfToken() });
