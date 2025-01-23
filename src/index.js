@@ -4,6 +4,13 @@ const helmet = require('helmet');
 //const cookieParser = require('cookie-parser');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
+const Redis = require('ioredis');
+const dns = require('dns').promises; 
+require('dotenv').config({ path: '../.env.dev' });
+
+
+
+
 const path = require('path');
 // const scheduleBackup = require('./services/backupService.js');
 const { scheduleTemporaryFileCleanup } = require('./services/cleanService.js');
@@ -18,6 +25,8 @@ const app = express();
 const port = 8000;
 
 app.use(helmet());
+// app.use(globalRateLimiter);
+
 //app.use(cookieParser());
 app.use(express.json()); // Pour parser le JSON dans les requêtes
 app.use(express.urlencoded({ extended: true })); // Pour parser les données de formulaire
@@ -39,6 +48,20 @@ const connectDB = async () => {
   }
 };
 
+// Redis connection
+const connectRedis = async(url) => {
+  try {
+    // Use IP lookup before connection
+    // const ip = await dns.lookup(new URL(url).hostname);
+
+    const redisClient = new Redis(url);
+
+    redisClient.on('connect', () => console.log('Redis connecté'));
+    redisClient.on('error', (err) => console.error(`Erreur Redis`, err));
+  } catch (error) {
+    console.error('Redis connection failed:', error);
+  }
+}
 // Application initialization function
 const initializeApp = async () => {
   try {
@@ -67,7 +90,6 @@ const initializeApp = async () => {
 
 app.use(express.json());
 
-app.use(globalRateLimiter);
 
 /*app.get('/api/csrf-token', csrfProtection, (req, res) => {
   res.json({ csrfToken: req.csrfToken() });
@@ -81,8 +103,12 @@ app.use((err, req, res, next) => {
 });*/
 app.use('/api', router);
 
-const startServer = () => {
+const startServer = async () => {
   initializeApp();
+  const redisUrlEx = process.env.REDIS_URL_EX;
+
+  await connectRedis(redisUrlEx);
+
 
   // Start Express server
   app.listen(port, () => {

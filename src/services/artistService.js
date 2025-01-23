@@ -3,10 +3,8 @@ const Artist = require('../models/Artist')(mongoose);
 const Joi = require('joi');
 const logger = require('../utils/logger');
 const Redis = require('ioredis');
-const redisClient = new Redis({
-  host: process.env.REDIS_HOST,
-  port: process.env.REDIS_PORT,
-});
+const redisUrl = process.env.REDIS_URL;
+// const redisClient = new Redis(redisUrl);
 
 const artistSchema = Joi.object({
   name: Joi.string().required().trim(),
@@ -39,7 +37,7 @@ const getAllArtists = async (page = 1, limit = 10) => {
   try {
     const cacheKey = `artists:page:${page}:limit:${limit}`; // Verifier si c'est bien ca
 
-    const cachedData = await redisClient.get(cacheKey);
+    // const cachedData = await redisClient.get(cacheKey);
 
     if (cachedData) {
       logger.info(`Artists retrieved from cache for page ${page}, limit ${limit}`);
@@ -61,7 +59,7 @@ const getAllArtists = async (page = 1, limit = 10) => {
       },
     };
 
-    redisClient.set(cacheKey, JSON.stringify(result), 'EX', 3600); // Cache for 1 hour
+    // redisClient.set(cacheKey, JSON.stringify(result), 'EX', 3600); // Cache for 1 hour
     logger.info(`Artists retrieved from db for page ${page}, limit ${limit}`);
 
     return result;
@@ -103,7 +101,7 @@ const updatedArtist = async (id, data) => {
 
     const updatedArtist = await Artist.findByIdAndUpdate(id, value, { new: true });
 
-    redisClient.del('artists:all'); // Verifier le cache
+    // redisClient.del('artists:all'); // Verifier le cache
 
     if (updatedArtist) {
       logger.info(`Artist with ID ${id} updated successfully.`);
@@ -124,7 +122,7 @@ const deleteArtist = async (id) => {
 
     const deleteArtist = await Artist.findByIdAndDelete(id);
 
-    redisClient.del('artists:all');
+    // redisClient.del('artists:all');
 
     if (deleteArtist) {
       logger.info(`Artist with ID ${id} deleted successfully.`);
@@ -140,7 +138,7 @@ const deleteArtist = async (id) => {
 const getArtistsByGenre = async (genre, page = 1, limit = 10) => {
   try {
     const cacheKey = `artists:genre:${genre}:page:${page}:limit:${limit}`;
-    const cachedData = await redisClient.get(cacheKey);
+    // const cachedData = await redisClient.get(cacheKey);
 
     if (cachedData) {
       logger.info(`Artists for genre ${genre} retrieved from cache.`);
@@ -162,7 +160,7 @@ const getArtistsByGenre = async (genre, page = 1, limit = 10) => {
       },
     };
 
-    redisClient.set(cacheKey, JSON.stringify(result), 'EX', 3600);
+    // redisClient.set(cacheKey, JSON.stringify(result), 'EX', 3600);
     return result;
   } catch (err) {
     logger.error(`Error fetching artists by genre: ${err.message}`);
