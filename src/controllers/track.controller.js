@@ -7,22 +7,30 @@ const upload = multer({ dest: 'uploads/' });
 // const Track = require('../models/Track')(mongoose);
 
 const createTrack = async (req, res) => {
-  console.log("req.files:", req.files);
-
   try {
-    // Log the entire req.files to check if the file is being passed properly
-
-    // Check if the file exists in the 'files' object
-    if (!req.files || !req.files.audioFile) {
-      throw new Error('Audio file is required.');
+    // Validate the presence of uploaded files
+    if (!req.uploadedFiles || req.uploadedFiles.length === 0) {
+      throw new Error('No audio files were uploaded.');
     }
 
-    // Get the file and other form-data
-    const { title, duration, albumId, isExplicit, lyrics, artistId, collaborators, credits, numberOfListens, popularity, trackNumber } = req.body;
-    const audioFile = req.files.audioFile; // This will hold the uploaded audio file
+    // Extract form data and uploaded files
+    const {
+      title,
+      duration,
+      albumId,
+      isExplicit,
+      lyrics,
+      artistId,
+      collaborators,
+      credits,
+      numberOfListens,
+      popularity,
+      trackNumber,
+    } = req.body;
 
-    // Log the audio file
-    console.log("Audio file:", audioFile);
+    // Use the first uploaded file for this example
+    const uploadedFile = req.uploadedFiles[0];
+    const { originalName, convertedPath, size, mimetype } = uploadedFile;
 
     // Prepare data for the service
     const trackData = {
@@ -37,23 +45,27 @@ const createTrack = async (req, res) => {
       numberOfListens,
       popularity,
       trackNumber,
-      audioFile,  // Send the audio file data to the service
+      audioFile: {
+        originalName,
+        convertedPath,
+        size,
+        mimetype,
+      },
     };
 
-    // Call the service to create the track
+    // Call the service to create a track
     const track = await trackService.createTrack(trackData);
 
-    console.log(`Track creation request handled successfully.`);
     res.status(201).json(track);
   } catch (error) {
-    console.error(`Error in createTrack: ${error.message}.`);
+    console.error(`Error in createTrack: ${error.message}`);
     res.status(400).json({ error: error.message });
   }
-}
+};
 
 const getAllTrack = async (req, res) => {
   try {
-    const tracks = await trackService.getAllTrack();
+    const tracks = await trackService.getAllTracks();
     logger.info(`Track list retrieval request handled successfully.`);
 
     res.status(200).json(tracks);
@@ -85,22 +97,31 @@ const getTrackById = async (req, res) => {
 
 const updatedTrack = async (req, res) => {
   try {
-    const track = await trackService.updatedTrack(req.params.id, req.body);
+    const { id } = req.params;
+
+    // Get the existing track by ID
+    const track = await trackService.getTrackById(id);
 
     if (!track) {
-      logger.warn(`Track with ID ${req.params.id} not found for update.`);
-
+      logger.warn(`Track with ID ${id} not found for update.`);
       return res.status(404).json({ error: 'Track not found.' });
     }
-    logger.info(`Track with ID ${req.params.id} updated successfully.`);
 
-    res.status(200).json(track);
+    // Only pass the fields that are provided in the request body
+    const updatedData = req.body;
+
+    // Pass the existing track and new data to the service for updating
+    const updatedTrack = await trackService.updatedTrack(id, updatedData);
+
+    logger.info(`Track with ID ${id} updated successfully.`);
+    res.status(200).json(updatedTrack);
   } catch (error) {
     logger.error(`Error in updateTrack: ${error.message}.`);
-
     res.status(400).json({ error: error.message });
   }
 };
+
+
 
 const deleteTrack = async (req, res) => {
   try {
@@ -174,6 +195,24 @@ const getTracksByGenre = async (req, res) => {
   }
 };
 
+const getTracksByYear = async (req, res) => {
+  try {
+    const { year } = req.params;
+    const { page = 1, limit = 10 } = req.query;
+
+    if (!year) {
+      return res.status(400).json({ error: 'Year is required.' });
+    }
+
+    const tracks = await trackService.getTracksByYear(parseInt(year, 10), parseInt(page, 10), parseInt(limit, 10));
+    res.status(200).json(tracks);
+  } catch (err) {
+    logger.error(`Error in getTracksByYear: ${err.message}`);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+
 module.exports = {
   createTrack,
   getAllTrack,
@@ -183,4 +222,5 @@ module.exports = {
   getTracksByArtist,
   getTracksByAlbum,
   getTracksByGenre,
+  getTracksByYear
 };

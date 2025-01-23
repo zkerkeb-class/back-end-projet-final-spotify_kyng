@@ -36,7 +36,7 @@ const upload = multer({
   storage: storage,
   limits: {
     fileSize: 50 * 1024 * 1024, // 50 MB max
-  },
+  },  
   fileFilter: (req, file, cb) => {
     const allowedTypes = /mp3|m4a|wav|flac/i; // Regex to allow common audio types
     const extname = allowedTypes.test(path.extname(file.originalname));
@@ -49,7 +49,10 @@ const upload = multer({
 
 // Middleware to handle audio uploads and convert to m4a
 const audioMiddleware = (req, res, next) => {
+  console.log('IN: ', req.files);
+
   upload.array('files', 10)(req, res, async (err) => {
+    
     if (err instanceof multer.MulterError) {
       console.error('Multer error:', err.message);
       return res.status(400).json({

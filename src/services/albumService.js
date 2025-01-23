@@ -214,6 +214,37 @@ const getAlbumsByGenre = async (genre, page = 1, limit = 10) => {
   }
 };
 
+const getAlbumsByYear = async (year) => {
+  try {
+    if (!year) {
+      throw new Error("Year parameter is required.");
+    }
+
+    const cacheKey = `albums:year:${year}`;
+    
+    // go check in redis cache if data is available
+    const cachedAlbums = await redisClient.get(cacheKey);
+    if (cachedAlbums) {
+      logger.info(`Cache hit for albums released in year ${year}.`);
+      return JSON.parse(cachedAlbums);
+    }
+
+    const albums = await Album.find({
+      $expr: {
+        $eq: [{ $year: "$releaseDate" }, Number(year)], // Match the year
+      },
+    });
+
+    await redisClient.set(cacheKey, JSON.stringify(albums), 'EX', 3600); // Cache expires in 1 hour
+    logger.info(`Cache set for albums released in year ${year}.`);
+
+    return albums;
+  } catch (error) {
+    logger.error(`Error fetching albums by year ${year}: ${error.message}`);
+    throw error;
+  }
+};
+
 module.exports = {
   createAlbum,
   getAllAlbums,
@@ -222,4 +253,5 @@ module.exports = {
   deleteAlbum,
   getAlbumsByArtist,
   getAlbumsByGenre,
+  getAlbumsByYear
 };

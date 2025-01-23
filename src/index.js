@@ -23,7 +23,7 @@ app.use(express.json()); // Pour parser le JSON dans les requêtes
 app.use(express.urlencoded({ extended: true })); // Pour parser les données de formulaire
 //const csrfProtection = csurf({ cookie: true });
 //app.use(csrfProtection);
-app.use(cacheMiddleware);
+// app.use(cacheMiddleware);
 
 // Database connection function
 const connectDB = async () => {

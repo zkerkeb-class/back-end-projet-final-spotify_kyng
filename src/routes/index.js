@@ -7,6 +7,7 @@ const router = express.Router();
 // const { seedDatabase } = require('../controllers/seed.controller');
 const seedRoutes = require('../routes/seed.route');
 const albumRoutes = require('../routes/album.route');
+const artistRoutes = require('../routes/artist.route');
 const globalRateLimiter = require('../middlewares/rateLimiter');
 const routeTest = require('./test.route');
 const tracksRoute = require('./track.route');
@@ -22,6 +23,7 @@ router.use('/auth', authRoutes);
 router.use('/testauth', testauth);
 router.use('/seed', seedRoutes);
 router.use('/album', albumRoutes);
+router.use('/artist', artistRoutes);
 
 router.use(globalRateLimiter);
 router.use(routeTest);

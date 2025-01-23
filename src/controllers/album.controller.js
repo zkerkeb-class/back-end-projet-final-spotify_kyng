@@ -123,6 +123,30 @@ const getAlbumsByGenre = async (req, res) => {
   }
 };
 
+const getAlbumsByYearController = async (req, res) => {
+  const { year } = req.params;
+
+  try {
+    if (!year || isNaN(year)) {
+      logger.warn("Invalid year parameter provided.");
+      return res.status(400).json({ message: "Invalid year parameter." });
+    }
+
+    const albums = await albumService.getAlbumsByYear(Number(year));
+
+    if (!albums.length) {
+      logger.info(`No albums found for year ${year}.`);
+      return res.status(404).json({ message: `No albums found for year ${year}.` });
+    }
+
+    logger.info(`Fetched albums for year ${year} successfully.`);
+    return res.status(200).json(albums);
+  } catch (error) {
+    logger.error(`Failed to fetch albums for year ${year}: ${error.message}`);
+    return res.status(500).json({ message: "Internal server error." });
+  }
+};
+
 module.exports = {
   createAlbum,
   getAllAlbum,
@@ -131,4 +155,5 @@ module.exports = {
   deleteAlbum,
   getAlbumsByArtist,
   getAlbumsByGenre,
+  getAlbumsByYearController
 };

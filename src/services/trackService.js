@@ -15,8 +15,8 @@ const redisClient = new Redis({
 const trackSchema = Joi.object({
   title: Joi.string().required().trim(),
   duration: Joi.number().required().min(0),
-  audioFile: Joi.object().required(),
-  albumId: Joi.string().optional(),
+  audioLink: Joi.string().required(),
+  albumId: Joi.object().optional(),
   isExplicit: Joi.boolean().optional(),
   lyrics: Joi.string().optional(),
   artistId: Joi.string().optional(),
@@ -27,43 +27,32 @@ const trackSchema = Joi.object({
   trackNumber: Joi.number().optional(),
 });
 
-
-// TODO : Ajouter les audios dans azure puis db
 const createTrack = async (data) => {
   try {
+    // Validate input data
     const { error, value } = trackSchema.validate(data);
-
     if (error) {
       throw new Error(error.details[0].message);
     }
 
-    const { audioFile, ...trackData } = value;
-    const filePath = audioFile.path;
-    const fileExt = filePath.split('.').pop().toLowerCase();
+    const { audioLink, ...trackData } = value;
+    const { convertedPath } = audioLink;
 
-    // Validate file type
-    if (fileExt !== 'm4a') {
-      throw new Error('Only .m4a files are supported.');
-    }
+    // Upload the converted file to a cloud storage
+    const azureFileUrl = await uploadToAzureStorage(convertedPath, 'spotify');
 
-    // Upload to Azure
-    const azureFileUrl = await uploadToAzureStorage(filePath, 'spotify');
-
-    // Extract Metadata
+    // Extract metadata (optional)
     let audioMetadata = {};
     try {
-      audioMetadata = await extractAudioMetadata(filePath);
+      audioMetadata = await extractAudioMetadata(convertedPath);
     } catch (err) {
-      logger.warn(`Metadata extraction failed for ${filePath}: ${err.message}`);
+      console.warn(`Failed to extract metadata from ${convertedPath}: ${err.message}`);
     }
 
-    const trackDuration = audioMetadata.duration || null;
-    const trackTitle = trackData.title || audioMetadata.title || 'Untitled';
-
-    // Populate Track Data
+    // Finalize track data
     const trackPayload = {
-      title: trackTitle,
-      duration: trackDuration,
+      title: trackData.title || audioMetadata.title || 'Untitled',
+      duration: trackData.duration || audioMetadata.duration || null,
       audioLink: azureFileUrl,
       albumId: trackData.albumId || null,
       isExplicit: trackData.isExplicit || false,
@@ -74,18 +63,14 @@ const createTrack = async (data) => {
       numberOfListens: trackData.numberOfListens || 0,
       popularity: trackData.popularity || 0,
       trackNumber: trackData.trackNumber || null,
+      releaseYear: trackData.releaseYear || 0,
     };
 
-    // Save Track
+    // Save the track to the database
     const track = await Track.create(trackPayload);
-
-    // Invalidate Cache (Optional)
-    // redisClient.del('tracks:all'); // Invalidate all tracks cache
-    logger.info('Track created and cache invalidated.');
-
     return track;
   } catch (error) {
-    logger.error(`Error creating track: ${error.message}.`);
+    console.error(`Error in createTrack service: ${error.message}`);
     throw error;
   }
 };
@@ -151,19 +136,29 @@ const updatedTrack = async (id, data) => {
       throw new Error('Track ID is required.');
     }
 
-    const { error, value } = trackSchema.validate(data, { allowUnknown: true });
+    // Fetch the existing track from the database by ID
+    const existingTrack = await Track.findById(id);
+    
+    if (!existingTrack) {
+      throw new Error('Track not found.');
+    }
 
+    // Merge the existing track data with the incoming data from the request body
+    const updatedTrackData = { ...existingTrack.toObject(), ...data };
+
+    // Validate the merged data using the Joi schema
+    const { error, value } = trackSchema.validate(updatedTrackData, { allowUnknown: true });
     if (error) {
       throw new Error(error.details[0].message);
     }
 
+    // Update the track in the database with the validated data
     const updatedTrack = await Track.findByIdAndUpdate(id, value, { new: true });
 
+    // Clear the cache after updating
     redisClient.del('tracks:all'); // Verifier le cache
 
-    if (updatedTrack) {
-      logger.info(`Track with ID ${id} updated successfully.`);
-    }
+    logger.info(`Track with ID ${id} updated successfully.`);
 
     return updatedTrack;
   } catch (error) {
@@ -171,6 +166,8 @@ const updatedTrack = async (id, data) => {
     throw error;
   }
 };
+
+
 
 const deleteTrack = async (id) => {
   try {
@@ -298,6 +295,42 @@ const getTracksByGenre = async (genre, page = 1, limit = 10) => {
   }
 };
 
+const getTracksByYear = async (year, page = 1, limit = 10) => {
+  try {
+    const cacheKey = `tracks:year:${year}:page:${page}:limit:${limit}`;
+    const cachedData = await redisClient.get(cacheKey);
+
+    if (cachedData) {
+      logger.info(`Tracks for year ${year} retrieved from cache.`);
+      return JSON.parse(cachedData);
+    }
+
+    const skip = (page - 1) * limit;
+
+    const tracks = await Track.find({ releaseYear: year }).skip(skip).limit(limit);
+
+    const totalCount = await Track.countDocuments({ releaseYear: year });
+
+    const result = {
+      tracks,
+      meta: {
+        total: totalCount,
+        page,
+        limit,
+        totalPages: Math.ceil(totalCount / limit),
+      },
+    };
+
+    redisClient.set(cacheKey, JSON.stringify(result), 'EX', 3600); // Cache for 1 hour
+    logger.info(`Tracks for year ${year} retrieved from database.`);
+    return result;
+  } catch (err) {
+    logger.error(`Error fetching tracks by year: ${err.message}`);
+    throw err;
+  }
+};
+
+
 module.exports = {
   createTrack,
   getAllTracks,
@@ -307,4 +340,5 @@ module.exports = {
   getTracksByArtist,
   getTracksByAlbum,
   getTracksByGenre,
+  getTracksByYear
 };

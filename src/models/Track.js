@@ -59,6 +59,10 @@ module.exports = (mongoose) => {
       trackNumber: {
         type: Number,
       },
+      releaseYear: { 
+        type: Number, 
+        required: true 
+      },
     },
     {
       timestamps: true, // Adds createdAt and updatedAt fields
