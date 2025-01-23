@@ -10,7 +10,6 @@ require('dotenv').config({ path: '../.env.dev' });
 
 
 
-
 const path = require('path');
 // const scheduleBackup = require('./services/backupService.js');
 const { scheduleTemporaryFileCleanup } = require('./services/cleanService.js');
@@ -24,6 +23,13 @@ dotenv.config();
 const app = express();
 const port = 8000;
 
+// const redisUrlEx = process.env.REDIS_URL_EX;
+
+// redisClient = new Redis(redisUrlEx);
+
+// redisClient.on('connect', () => console.log('Redis connecté'));
+// redisClient.on('error', (err) => console.error(`Erreur Redis`, err));
+
 app.use(helmet());
 // app.use(globalRateLimiter);
 
@@ -32,7 +38,7 @@ app.use(express.json()); // Pour parser le JSON dans les requêtes
 app.use(express.urlencoded({ extended: true })); // Pour parser les données de formulaire
 //const csrfProtection = csurf({ cookie: true });
 //app.use(csrfProtection);
-app.use(cacheMiddleware);
+// app.use(cacheMiddleware);
 
 // Database connection function
 const connectDB = async () => {
@@ -49,19 +55,19 @@ const connectDB = async () => {
 };
 
 // Redis connection
-const connectRedis = async(url) => {
-  try {
-    // Use IP lookup before connection
-    // const ip = await dns.lookup(new URL(url).hostname);
+// const connectRedis = async(url) => {
+//   try {
+//     // Use IP lookup before connection
+//     // const ip = await dns.lookup(new URL(url).hostname);
 
-    const redisClient = new Redis(url);
+//     redisClient = new Redis(url);
 
-    redisClient.on('connect', () => console.log('Redis connecté'));
-    redisClient.on('error', (err) => console.error(`Erreur Redis`, err));
-  } catch (error) {
-    console.error('Redis connection failed:', error);
-  }
-}
+//     redisClient.on('connect', () => console.log('Redis connecté'));
+//     redisClient.on('error', (err) => console.error(`Erreur Redis`, err));
+//   } catch (error) {
+//     console.error('Redis connection failed:', error);
+//   }
+// }
 // Application initialization function
 const initializeApp = async () => {
   try {
@@ -105,9 +111,9 @@ app.use('/api', router);
 
 const startServer = async () => {
   initializeApp();
-  const redisUrlEx = process.env.REDIS_URL_EX;
+  // const redisUrlEx = process.env.REDIS_URL_EX;
 
-  await connectRedis(redisUrlEx);
+  // redisClient = await connectRedis(redisUrlEx);
 
 
   // Start Express server
@@ -128,3 +134,6 @@ process.on('SIGINT', async () => {
 });
 
 startServer();
+
+
+// module.exports = redisClient;

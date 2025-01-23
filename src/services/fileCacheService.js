@@ -1,4 +1,5 @@
-const redisClient = require('../config/redis');
+const redisClient = require('../index');
+
 
 const getFileFromCache = async (key) => {
   try {
