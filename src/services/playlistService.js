@@ -43,10 +43,10 @@ const getAllPlaylists = async (page = 1, limit = 10) => {
 
     // const cachedData = await redisClient.get(cacheKey);
 
-    if (cachedData) {
-      logger.info(`Playlists retrieved from cache for page ${page}, limit ${limit}`);
-      return JSON.parse(cachedData);
-    }
+    // if (cachedData) {
+    //   logger.info(`Playlists retrieved from cache for page ${page}, limit ${limit}`);
+    //   return JSON.parse(cachedData);
+    // }
 
     const skip = (page - 1) * limit;
 

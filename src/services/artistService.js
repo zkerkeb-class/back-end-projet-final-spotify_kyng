@@ -39,10 +39,10 @@ const getAllArtists = async (page = 1, limit = 10) => {
 
     // const cachedData = await redisClient.get(cacheKey);
 
-    if (cachedData) {
-      logger.info(`Artists retrieved from cache for page ${page}, limit ${limit}`);
-      return JSON.parse(cachedData);
-    }
+    // if (cachedData) {
+    //   logger.info(`Artists retrieved from cache for page ${page}, limit ${limit}`);
+    //   return JSON.parse(cachedData);
+    // }
 
     const skip = (page - 1) * limit;
     const totalCount = await Artist.countDocuments();
@@ -140,10 +140,10 @@ const getArtistsByGenre = async (genre, page = 1, limit = 10) => {
     const cacheKey = `artists:genre:${genre}:page:${page}:limit:${limit}`;
     // const cachedData = await redisClient.get(cacheKey);
 
-    if (cachedData) {
-      logger.info(`Artists for genre ${genre} retrieved from cache.`);
-      return JSON.parse(cachedData);
-    }
+    // if (cachedData) {
+    //   logger.info(`Artists for genre ${genre} retrieved from cache.`);
+    //   return JSON.parse(cachedData);
+    // }
 
     const skip = (page - 1) * limit;
 

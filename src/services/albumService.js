@@ -48,10 +48,10 @@ const getAllAlbums = async (page = 1, limit = 10) => {
 
     // const cachedData = await redisClient.get(cacheKey);
 
-    if (cachedData) {
-      logger.info(`Albums retrieved from cache for page ${page}, limit ${limit}`);
-      return JSON.parse(cachedData);
-    }
+    // if (cachedData) {
+    //   logger.info(`Albums retrieved from cache for page ${page}, limit ${limit}`);
+    //   return JSON.parse(cachedData);
+    // }
 
     const skip = (page - 1) * limit;
     const totalCount = await Album.countDocuments();
@@ -149,10 +149,10 @@ const getAlbumsByArtist = async (artistId, page = 1, limit = 10) => {
     const cacheKey = `albums:artist:${artistId}:page:${page}:limit:${limit}`;
     // const cachedData = await redisClient.get(cacheKey);
 
-    if (cachedData) {
-      logger.info(`Albums for artist ${artistId} retrieved from cache.`);
-      return JSON.parse(cachedData);
-    }
+    // if (cachedData) {
+    //   logger.info(`Albums for artist ${artistId} retrieved from cache.`);
+    //   return JSON.parse(cachedData);
+    // }
 
     const skip = (page - 1) * limit;
 
@@ -222,7 +222,7 @@ const getAlbumsByYear = async (year) => {
     const cacheKey = `albums:year:${year}`;
     
     // go check in redis cache if data is available
-    const cachedAlbums = await redisClient.get(cacheKey);
+    // const cachedAlbums = await redisClient.get(cacheKey);
     if (cachedAlbums) {
       logger.info(`Cache hit for albums released in year ${year}.`);
       return JSON.parse(cachedAlbums);
@@ -234,7 +234,7 @@ const getAlbumsByYear = async (year) => {
       },
     });
 
-    await redisClient.set(cacheKey, JSON.stringify(albums), 'EX', 3600); // Cache expires in 1 hour
+    // await redisClient.set(cacheKey, JSON.stringify(albums), 'EX', 3600); // Cache expires in 1 hour
     logger.info(`Cache set for albums released in year ${year}.`);
 
     return albums;
