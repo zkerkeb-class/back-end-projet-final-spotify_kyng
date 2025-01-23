@@ -18,7 +18,7 @@ const loginController = async (req, res) => {
 };
 
 const logoutController = async (req, res) => {
-  const token = req.headers.authorization?.split(' ')[1]; // Récupère le token depuis les headers
+  const token = req.headers.authorization?.split(' ')[1]; 
 
   if (!token) {
     return res.status(400).json({ message: 'Token manquant.' });

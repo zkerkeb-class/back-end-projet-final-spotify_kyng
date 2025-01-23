@@ -4,10 +4,9 @@ const Joi = require('joi');
 const logger = require('../utils/logger');
 
 const Redis = require('ioredis');
-const redisClient = new Redis({
-  host: process.env.REDIS_HOST,
-  port: process.env.REDIS_PORT,
-});
+const redisUrl = process.env.REDIS_URL;
+
+// const redisClient = new Redis(redisUrl);
 
 const playlistSchema = Joi.object({
   pistes_audio: Joi.string().required(),
@@ -42,7 +41,7 @@ const getAllPlaylists = async (page = 1, limit = 10) => {
   try {
     const cacheKey = `playlists:page:${page}:limit:${limit}`;
 
-    const cachedData = await redisClient.get(cacheKey);
+    // const cachedData = await redisClient.get(cacheKey);
 
     if (cachedData) {
       logger.info(`Playlists retrieved from cache for page ${page}, limit ${limit}`);
@@ -64,7 +63,7 @@ const getAllPlaylists = async (page = 1, limit = 10) => {
       },
     };
 
-    redisClient.set(cacheKey, JSON.stringify(result), 'EX', 3600); // Cache for 1 hour
+    // redisClient.set(cacheKey, JSON.stringify(result), 'EX', 3600); // Cache for 1 hour
     logger.info(`Playlists retrieved from db for page ${page}, limit ${limit}`);
     return result;
   } catch (error) {
@@ -105,7 +104,7 @@ const updatedPlaylist = async (id, data) => {
 
     const updatedPlaylist = await Playlist.findByIdAndUpdate(id, value, { new: true });
 
-    redisClient.del('playlists:all'); // Verifier le cache
+    // redisClient.del('playlists:all'); // Verifier le cache
 
     if (updatedPlaylist) {
       logger.info(`Playlist with ID ${id} updated successfully.`);
@@ -126,7 +125,7 @@ const deletePlaylist = async (id) => {
 
     const deletePlaylist = await Playlist.findByIdAndDelete(id);
 
-    redisClient.del('playlists:all');
+    // redisClient.del('playlists:all');
 
     if (deletePlaylist) {
       logger.info(`Playlist with ID ${id} deleted successfully.`);

@@ -10,24 +10,18 @@ const authMiddleware = async (req, res, next) => {
   }
 
   try {
-    // Étape 1 : Vérifie si les données de session sont en cache
     const cachedSession = await sessionCacheService.getSession(token);
     if (cachedSession) {
-      req.user = cachedSession; // Si trouvé, on passe directement la session
+      req.user = cachedSession; 
       return next();
     }
-
-    // Étape 2 : Décoder le token JWT et récupérer l'utilisateur depuis la base
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const user = await User.findById(decoded.id);
     if (!user) {
       throw new Error('User not found');
     }
-
-    // Étape 3 : Stocker les données utilisateur dans le cache avec expiration
     const sessionData = { id: user._id, email: user.email, role: user.role };
     await sessionCacheService.setSession(token, sessionData);
-
     req.user = sessionData;
     next();
   } catch (err) {

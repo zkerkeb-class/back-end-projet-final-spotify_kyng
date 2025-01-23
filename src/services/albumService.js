@@ -4,10 +4,9 @@ const Album = require('../models/Album')(mongoose);
 const Joi = require('joi');
 const logger = require('../utils/logger');
 const Redis = require('ioredis');
-const redisClient = new Redis({
-  host: process.env.REDIS_HOST,
-  port: process.env.REDIS_PORT,
-});
+const redisUrl = process.env.REDIS_URL;
+
+// const redisClient = new Redis(redisUrl);
 
 const albumSchema = Joi.object({
   title: Joi.string().required().trim(),
@@ -47,7 +46,7 @@ const getAllAlbums = async (page = 1, limit = 10) => {
   try {
     const cacheKey = `albums:page:${page}:limit:${limit}`; // Verifier si c'est bien ca
 
-    const cachedData = await redisClient.get(cacheKey);
+    // const cachedData = await redisClient.get(cacheKey);
 
     if (cachedData) {
       logger.info(`Albums retrieved from cache for page ${page}, limit ${limit}`);
@@ -68,7 +67,7 @@ const getAllAlbums = async (page = 1, limit = 10) => {
     };
 
     // const albums = await Album.find().populate('artistId', 'name');
-    redisClient.set(cacheKey, JSON.stringify(result), 'EX', 3600); // Cache for 1 hour
+    // redisClient.set(cacheKey, JSON.stringify(result), 'EX', 3600); // Cache for 1 hour
     logger.info(`Albums retrieved from db for page ${page}, limit ${limit}`);
 
     return result;
@@ -110,7 +109,7 @@ const updatedAlbum = async (id, data) => {
 
     const updatedAlbum = await Album.findByIdAndUpdate(id, value, { new: true });
 
-    redisClient.del('albums:all'); // Verifier le cache
+    // redisClient.del('albums:all'); // Verifier le cache
 
     if (updatedAlbum) {
       logger.info(`Album with ID ${id} updated successfully.`);
@@ -131,7 +130,7 @@ const deleteAlbum = async (id) => {
 
     const deleteAlbum = await Album.findByIdAndDelete(id);
 
-    redisClient.del('albums:all');
+    // redisClient.del('albums:all');
 
     if (deleteAlbum) {
       logger.info(`Album with ID ${id} deleted successfully.`);
@@ -148,7 +147,7 @@ const deleteAlbum = async (id) => {
 const getAlbumsByArtist = async (artistId, page = 1, limit = 10) => {
   try {
     const cacheKey = `albums:artist:${artistId}:page:${page}:limit:${limit}`;
-    const cachedData = await redisClient.get(cacheKey);
+    // const cachedData = await redisClient.get(cacheKey);
 
     if (cachedData) {
       logger.info(`Albums for artist ${artistId} retrieved from cache.`);
@@ -172,7 +171,7 @@ const getAlbumsByArtist = async (artistId, page = 1, limit = 10) => {
       },
     };
 
-    redisClient.set(cacheKey, JSON.stringify(result), 'EX', 3600); // Cache for 1 hour
+    // redisClient.set(cacheKey, JSON.stringify(result), 'EX', 3600); // Cache for 1 hour
     logger.info(`Albums for artist ${artistId} retrieved from database.`);
     return result;
   } catch (err) {

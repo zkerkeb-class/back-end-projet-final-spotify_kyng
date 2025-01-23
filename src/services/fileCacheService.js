@@ -1,10 +1,6 @@
-const Redis = require('ioredis');
-const redisClient = new Redis({
-  host: process.env.REDIS_HOST,
-  port: process.env.REDIS_PORT,
-});
+const redisClient = require('../index');
 
-// Fonction pour récupérer un fichier depuis le cache
+
 const getFileFromCache = async (key) => {
   try {
     const cachedFile = await redisClient.get(key);
@@ -15,7 +11,6 @@ const getFileFromCache = async (key) => {
   }
 };
 
-// Fonction pour enregistrer un fichier dans le cache
 const setFileInCache = async (key, data, ttl = 7200) => {
   try {
     await redisClient.setex(key, ttl, JSON.stringify(data));

@@ -4,13 +4,9 @@ const Joi = require('joi');
 const logger = require('../utils/logger');
 const { extractAudioMetadata } = require('../utils/metadataExtractor');
 const { uploadToAzureStorage } = require('./seedService');
+// const redisClient = require('../config/redis');
 // const Playlist = require('../models/Playlist');
 
-const Redis = require('ioredis');
-const redisClient = new Redis({
-  host: process.env.REDIS_HOST,
-  port: process.env.REDIS_PORT,
-});
 
 const trackSchema = Joi.object({
   title: Joi.string().required().trim(),
@@ -79,12 +75,12 @@ const getAllTracks = async (page = 1, limit = 10) => {
   try {
     const cacheKey = `tracks:page:${page}:limit:${limit}`; // Verifier si c'est bien ca
 
-    const cachedData = await redisClient.get(cacheKey);
+    // const cachedData = await redisClient.get(cacheKey);
 
-    if (cachedData) {
-      logger.info(`Tracks retrieved from cache for page ${page}, limit ${limit}`);
-      return JSON.parse(cachedData);
-    }
+    // if (cachedData) {
+    //   logger.info(`Tracks retrieved from cache for page ${page}, limit ${limit}`);
+    //   return JSON.parse(cachedData);
+    // }
 
     const skip = (page - 1) * limit;
 
@@ -102,7 +98,7 @@ const getAllTracks = async (page = 1, limit = 10) => {
       },
     };
 
-    redisClient.set(cacheKey, JSON.stringify(result), 'EX', 3600); // Cache for 1 hour
+    // redisClient.set(cacheKey, JSON.stringify(result), 'EX', 3600); // Cache for 1 hour
     logger.info(`Tracks retrieved from db for page ${page}, limit ${limit}`);
 
     return result;
@@ -156,7 +152,7 @@ const updatedTrack = async (id, data) => {
     const updatedTrack = await Track.findByIdAndUpdate(id, value, { new: true });
 
     // Clear the cache after updating
-    redisClient.del('tracks:all'); // Verifier le cache
+    // redisClient.del('tracks:all'); // Verifier le cache
 
     logger.info(`Track with ID ${id} updated successfully.`);
 
@@ -177,7 +173,7 @@ const deleteTrack = async (id) => {
 
     const deleteTrack = await Track.findByIdAndDelete(id);
 
-    redisClient.del('tracks:all');
+    // redisClient.del('tracks:all');
 
     if (deleteTrack) {
       logger.info(`Track with ID ${id} deleted successfully.`);
@@ -192,13 +188,13 @@ const deleteTrack = async (id) => {
 
 const getTracksByArtist = async (artistId, page = 1, limit = 10) => {
   try {
-    const cacheKey = `tracks:artist:${artistId}:page:${page}:limit:${limit}`;
-    const cachedData = await redisClient.get(cacheKey);
+    // const cacheKey = `tracks:artist:${artistId}:page:${page}:limit:${limit}`;
+    // const cachedData = await redisClient.get(cacheKey);
 
-    if (cachedData) {
-      logger.info(`Tracks for artist ${artistId} retrieved from cache.`);
-      return JSON.parse(cachedData);
-    }
+    // if (cachedData) {
+    //   logger.info(`Tracks for artist ${artistId} retrieved from cache.`);
+    //   return JSON.parse(cachedData);
+    // }
 
     const skip = (page - 1) * limit;
 
@@ -217,7 +213,7 @@ const getTracksByArtist = async (artistId, page = 1, limit = 10) => {
       },
     };
 
-    redisClient.set(cacheKey, JSON.stringify(result), 'EX', 3600); // Cache for 1 hour
+    // redisClient.set(cacheKey, JSON.stringify(result), 'EX', 3600); // Cache for 1 hour
     logger.info(`Tracks for artist ${artistId} retrieved from database.`);
     return result;
   } catch (err) {
@@ -229,12 +225,12 @@ const getTracksByArtist = async (artistId, page = 1, limit = 10) => {
 const getTracksByAlbum = async (albumId, page = 1, limit = 10) => {
   try {
     const cacheKey = `tracks:album:${albumId}:page:${page}:limit:${limit}`;
-    const cachedData = await redisClient.get(cacheKey);
+    // const cachedData = await redisClient.get(cacheKey);
 
-    if (cachedData) {
-      logger.info(`Tracks for album ${albumId} retrieved from cache.`);
-      return JSON.parse(cachedData);
-    }
+    // if (cachedData) {
+    //   logger.info(`Tracks for album ${albumId} retrieved from cache.`);
+    //   return JSON.parse(cachedData);
+    // }
 
     const skip = (page - 1) * limit;
 
@@ -253,7 +249,7 @@ const getTracksByAlbum = async (albumId, page = 1, limit = 10) => {
       },
     };
 
-    redisClient.set(cacheKey, JSON.stringify(result), 'EX', 3600); // Cache for 1 hour
+    // redisClient.set(cacheKey, JSON.stringify(result), 'EX', 3600); // Cache for 1 hour
     logger.info(`Tracks for album ${albumId} retrieved from database.`);
     return result;
   } catch (err) {
@@ -265,12 +261,12 @@ const getTracksByAlbum = async (albumId, page = 1, limit = 10) => {
 const getTracksByGenre = async (genre, page = 1, limit = 10) => {
   try {
     const cacheKey = `tracks:genre:${genre}:page:${page}:limit:${limit}`;
-    const cachedData = await redisClient.get(cacheKey);
+    // const cachedData = await redisClient.get(cacheKey);
 
-    if (cachedData) {
-      logger.info(`Tracks for genre ${genre} retrieved from cache.`);
-      return JSON.parse(cachedData);
-    }
+    // if (cachedData) {
+    //   logger.info(`Tracks for genre ${genre} retrieved from cache.`);
+    //   return JSON.parse(cachedData);
+    // }
 
     const skip = (page - 1) * limit;
 
@@ -287,7 +283,7 @@ const getTracksByGenre = async (genre, page = 1, limit = 10) => {
       },
     };
 
-    redisClient.set(cacheKey, JSON.stringify(result), 'EX', 3600);
+    // redisClient.set(cacheKey, JSON.stringify(result), 'EX', 3600);
     return result;
   } catch (err) {
     logger.error(`Error fetching tracks by genre: ${err.message}`);
@@ -298,12 +294,12 @@ const getTracksByGenre = async (genre, page = 1, limit = 10) => {
 const getTracksByYear = async (year, page = 1, limit = 10) => {
   try {
     const cacheKey = `tracks:year:${year}:page:${page}:limit:${limit}`;
-    const cachedData = await redisClient.get(cacheKey);
+    // const cachedData = await redisClient.get(cacheKey);
 
-    if (cachedData) {
-      logger.info(`Tracks for year ${year} retrieved from cache.`);
-      return JSON.parse(cachedData);
-    }
+    // if (cachedData) {
+    //   logger.info(`Tracks for year ${year} retrieved from cache.`);
+    //   return JSON.parse(cachedData);
+    // }
 
     const skip = (page - 1) * limit;
 
@@ -321,7 +317,7 @@ const getTracksByYear = async (year, page = 1, limit = 10) => {
       },
     };
 
-    redisClient.set(cacheKey, JSON.stringify(result), 'EX', 3600); // Cache for 1 hour
+    // redisClient.set(cacheKey, JSON.stringify(result), 'EX', 3600); // Cache for 1 hour
     logger.info(`Tracks for year ${year} retrieved from database.`);
     return result;
   } catch (err) {
