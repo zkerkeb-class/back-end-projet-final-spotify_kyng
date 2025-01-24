@@ -10,7 +10,7 @@ const config = require('./config/config.js')[process.env.NODE_ENV || 'developmen
 dotenv.config();
 
 const app = express();
-const port = 3000;
+const port =8000;
 
 // Database connection function
 const connectDB = async () => {
