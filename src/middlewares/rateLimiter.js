@@ -9,8 +9,8 @@
 //   windowMs: 15 * 60 * 1000, 
 //   max: 10, 
 //   message: 'Too many requests from this IP, please try again later.',
-//   standardHeaders: true, 
-//   legacyHeaders: false, 
+//  standardHeaders: true, 
+// legacyHeaders: false, 
 // });
 
-// module.exports = globalRateLimiter;
+ // module.exports = globalRateLimiter;
