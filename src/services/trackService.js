@@ -4,6 +4,10 @@ const Joi = require('joi');
 const logger = require('../utils/logger');
 const { extractAudioMetadata } = require('../utils/metadataExtractor');
 const { uploadToAzureStorage } = require('./seedService');
+const Artist = require('../models/Artist')(mongoose);
+const { ObjectId } = require('mongodb');
+const { Types } = require('mongoose');
+
 // const redisClient = require('../config/redis');
 // const Playlist = require('../models/Playlist');
 
@@ -11,58 +15,72 @@ const { uploadToAzureStorage } = require('./seedService');
 const trackSchema = Joi.object({
   title: Joi.string().required().trim(),
   duration: Joi.number().required().min(0),
-  audioLink: Joi.string().required(),
-  albumId: Joi.object().optional(),
+  audioLink: Joi.alternatives().try(
+    Joi.string().required(),
+    Joi.object({
+      convertedPath: Joi.string().required(),
+      originalName: Joi.string().optional(),
+      size: Joi.number().optional(),
+      mimetype: Joi.string().optional()
+    }).required()
+  ),
+  albumId: Joi.alternatives().try(
+    Joi.string().hex().length(24).optional(), // Matches MongoDB ObjectId string (24 hex characters)
+    Joi.object().optional() // Allows an actual ObjectId
+  ).optional(),
   isExplicit: Joi.boolean().optional(),
   lyrics: Joi.string().optional(),
-  artistId: Joi.string().optional(),
-  collaborators: Joi.string().optional(),
-  credits: Joi.string().optional(),
+  artistId: Joi.object().optional(),
+  collaborators: Joi.array().items(Joi.string()).optional(),
+  credits: Joi.object().optional(),
   numberOfListens: Joi.number().optional(),
   popularity: Joi.number().optional(),
   trackNumber: Joi.number().optional(),
+  releaseYear: Joi.number().optional()
 });
 
 const createTrack = async (data) => {
   try {
-    // Validate input data
+    const { artistId, albumId } = data;
+
+    if (artistId && mongoose.Types.ObjectId.isValid(artistId)) {
+      data.artistId = new Types.ObjectId(artistId);
+    } else {
+      data.artistId = null; // or remove it entirely using `delete data.artistId`
+    }
+    console.log('tt : ', data.artistId)
+    // Convert albumId to ObjectId if it's a valid format, otherwise set it to null
+    if (albumId && mongoose.Types.ObjectId.isValid(albumId)) {
+      data.albumId = new Types.ObjectId(albumId);
+    } else {
+      data.albumId = null; // or remove it entirely using `delete data.albumId`
+    }
+
+    console.log('tt : ', data.albumId)
     const { error, value } = trackSchema.validate(data);
     if (error) {
       throw new Error(error.details[0].message);
     }
 
-    const { audioLink, ...trackData } = value;
-    const { convertedPath } = audioLink;
-
-    // Upload the converted file to a cloud storage
-    const azureFileUrl = await uploadToAzureStorage(convertedPath, 'spotify');
-
-    // Extract metadata (optional)
-    let audioMetadata = {};
-    try {
-      audioMetadata = await extractAudioMetadata(convertedPath);
-    } catch (err) {
-      console.warn(`Failed to extract metadata from ${convertedPath}: ${err.message}`);
+    const artistExists = await Artist.find({ _id: value.artistId });
+    if (!artistExists) {
+      throw new Error(`Artist with ID ${value.artistId} does not exist.`);
     }
 
-    // Finalize track data
+    let azureFileUrl;
+    if (typeof value.audioLink === 'object') {
+      azureFileUrl = await uploadToAzureStorage(value.audioLink.convertedPath, 'spotify');
+      fileName = azureFileUrl.split('/').pop(); // Extract only the file name
+    } else {
+      fileName = value.audioLink.split('/').pop(); // Handle string input directly
+    }
+
+    // Rest of the method remains the same...
     const trackPayload = {
-      title: trackData.title || audioMetadata.title || 'Untitled',
-      duration: trackData.duration || audioMetadata.duration || null,
-      audioLink: azureFileUrl,
-      albumId: trackData.albumId || null,
-      isExplicit: trackData.isExplicit || false,
-      lyrics: trackData.lyrics || null,
-      artistId: trackData.artistId || null,
-      collaborators: trackData.collaborators || null,
-      credits: trackData.credits || null,
-      numberOfListens: trackData.numberOfListens || 0,
-      popularity: trackData.popularity || 0,
-      trackNumber: trackData.trackNumber || null,
-      releaseYear: trackData.releaseYear || 0,
+      ...value,
+      audioLink: fileName
     };
 
-    // Save the track to the database
     const track = await Track.create(trackPayload);
     return track;
   } catch (error) {
@@ -118,6 +136,26 @@ const getTrackById = async (id) => {
 
     if (!track) {
       logger.warn(`Track with ID ${id} not found.`);
+    }
+    return track;
+  } catch (error) {
+    logger.error(`Error fetching track by ID: ${error.message}.`);
+    throw error;
+  }
+};
+
+const getTrackByTitle = async (title) => {
+  try {
+    if (!title) {
+      throw new Error('Track title is required.');
+    }
+
+    const track = await Track.find({
+        title: title
+    });
+
+    if (!track) {
+      logger.warn(`Track with title ${title} not found.`);
     }
     return track;
   } catch (error) {
@@ -326,6 +364,27 @@ const getTracksByYear = async (year, page = 1, limit = 10) => {
   }
 };
 
+const getTop10TracksByReleaseDate = async () => {
+  try {
+    logger.info("Fetching top 10 tracks by release date");
+
+    const top10Tracks = await Track.find()
+      .sort({ releaseYear: -1 })
+      .limit(10);
+
+    if (!top10Tracks || top10Tracks.length === 0) {
+      logger.warn("No tracks found for top 10 by release date");
+      return { status: 404, message: "No tracks found", data: null };
+    }
+
+    logger.info(`Found ${top10Tracks.length} tracks`);
+    return { status: 200, message: "Top 10 tracks found", data: top10Tracks };
+  } catch (error) {
+    logger.error(`Error fetching top 10 tracks by release date: ${error.message}`);
+    return { status: 500, message: "Error fetching top 10 tracks", data: null, error: error.message };
+  }
+};
+
 
 module.exports = {
   createTrack,
@@ -336,5 +395,7 @@ module.exports = {
   getTracksByArtist,
   getTracksByAlbum,
   getTracksByGenre,
-  getTracksByYear
+  getTracksByYear,
+  getTrackByTitle,
+  getTop10TracksByReleaseDate
 };

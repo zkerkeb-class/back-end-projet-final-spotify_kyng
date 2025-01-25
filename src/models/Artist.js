@@ -86,9 +86,17 @@ module.exports = (mongoose) => {
         ],
       },
       // Image types
-      images: {
-        type: String,
-      },
+      images: [{
+        path: {
+          type: String,
+          required: true
+        },
+        type: {
+          type: String,
+          enum: ['Profile', 'Cover', 'Live', 'Promotional', 'Album'],
+          required: true
+        }
+      }],
     },
     {
       timestamps: true,

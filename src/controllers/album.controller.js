@@ -6,7 +6,20 @@ const logger = require('../utils/logger');
 
 const createAlbum = async (req, res) => {
   try {
-    const album = await albumService.createAlbum(req.body);
+    
+    if (!req.optimizedImages || req.optimizedImages.length === 0) {
+      throw new Error('No optimized images found.');
+    }
+    const albumData = {
+      title: req.body.title || faker.music.album(),
+      artistId: req.body.artistId || faker.person.fullName(),
+      releaseDate: req.body.releaseDate || new Date().getFullYear(),
+      genre: req.body.genre || faker.music.genre(),
+      images: req.optimizedImages.map(img => ({
+        path: img.path
+      }))
+    };
+    const album = await albumService.createAlbum(albumData);
     logger.info(`Album creation request handled successfully.`);
 
     res.status(201).json(album);
@@ -52,24 +65,54 @@ const getAlbumById = async (req, res) => {
   }
 };
 
-const updatedAlbum = async (req, res) => {
+const getAlbumByTitle = async (req, res) => {
   try {
-    const album = await albumService.updatedAlbum(req.params.id, req.body);
+    const album = await albumService.getAlbumByTitle(req.params.title);
 
     if (!album) {
-      logger.warn(`Album with ID ${req.params.id} not found for update.`);
+      logger.warn(`Album with title ${req.params.title} not found`);
 
       return res.status(404).json({ error: 'Album not found.' });
     }
+    logger.info(`Album with title ${req.params.title} retrieved successfully.`);
+
+    res.status(200).json(album);
+  } catch (error) {
+    logger.error(`Error in getAlbumByTitle: ${error.message}.`);
+
+    res.status(400).json({ error: error.message });
+  }
+};
+
+const updatedAlbum = async (req, res) => {
+  try {
+    let albumData = req.body;
+    
+    // If there are new optimized images uploaded, we should update the album's image field
+    if (req.optimizedImages && req.optimizedImages.length > 0) {
+      albumData.images = req.optimizedImages.map(img => ({ path: img.path }));
+    }
+
+    if (!albumData.artistId) {
+      delete albumData.artistId; // Si pas fourni, on le supprime de l'update
+    }
+
+    const album = await albumService.updatedAlbum(req.params.id, albumData);
+
+    if (!album) {
+      logger.warn(`Album with ID ${req.params.id} not found for update.`);
+      return res.status(404).json({ error: 'Album not found.' });
+    }
+
     logger.info(`Album with ID ${req.params.id} updated successfully.`);
 
     res.status(200).json(album);
   } catch (error) {
     logger.error(`Error in updatedAlbum: ${error.message}.`);
-
     res.status(400).json({ error: error.message });
   }
 };
+
 
 const deleteAlbum = async (req, res) => {
   try {
@@ -147,6 +190,32 @@ const getAlbumsByYearController = async (req, res) => {
   }
 };
 
+const getTop10RecentAlbums = async (req, res) => {
+  try {
+    const result = await albumService.getTop10RecentAlbums();
+
+    if (result.status === 200) {
+    logger.info(`Fetched latest albums ${result} successfully.`);
+
+      return res.status(200).json({
+        message: result.message,
+        data: result.data,
+      });
+    } else {
+      return res.status(result.status).json({
+        message: result.message,
+        error: result.error,
+      });
+    }
+  } catch (error) {
+    logger.error(`Error in controller: ${error.message}`);
+    return res.status(500).json({
+      message: 'Internal server error',
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   createAlbum,
   getAllAlbum,
@@ -155,5 +224,7 @@ module.exports = {
   deleteAlbum,
   getAlbumsByArtist,
   getAlbumsByGenre,
-  getAlbumsByYearController
+  getAlbumsByYearController,
+  getAlbumByTitle,
+  getTop10RecentAlbums
 };

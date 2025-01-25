@@ -39,11 +39,16 @@ module.exports = (mongoose) => {
       },
       // Collaborators
       collaborators: {
-        type: String,
+        type: [String], // Change to array of strings
+        default: []
       },
       // Artist credits (additional artists, collaborators)
       credits: {
-        type: String,
+        type: {
+          producer: String,
+          songwriter: String
+        },
+        default: {}
       },
       // Number of listens
       numberOfListens: {
@@ -61,7 +66,7 @@ module.exports = (mongoose) => {
       },
       releaseYear: { 
         type: Number, 
-        required: true 
+        default: new Date().getFullYear() // Optional: set default to current year
       },
     },
     {

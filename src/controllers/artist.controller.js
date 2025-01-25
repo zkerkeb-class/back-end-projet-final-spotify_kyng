@@ -6,7 +6,19 @@ const logger = require('../utils/logger');
 
 const createArtist = async (req, res) => {
   try {
-    const artist = await artistService.createArtist(req.body);
+
+    if (!req.optimizedImages || req.optimizedImages.length === 0) {
+      throw new Error('No optimized images found.');
+    }
+    const artistData = {
+      name: req.body.name,
+      genres: req.body.genres,
+      images: req.optimizedImages.map(img => ({
+        path: img.path
+      }))
+    };
+
+    const artist = await artistService.createArtist(artistData);
     logger.info(`Artist creation request handled successfully.`);
 
     res.status(201).json(artist);
@@ -52,9 +64,36 @@ const getArtistById = async (req, res) => {
   }
 };
 
+const getArtistByName = async (req, res) => {
+  try {
+    const artist = await artistService.getArtistByName(req.params.name);
+
+    if (!artist) {
+      logger.warn(`Artist with name ${req.params.name} not found`);
+
+      return res.status(404).json({ error: 'Artist not found.' });
+    }
+    logger.info(`Artist with name ${req.params.name} retrieved successfully.`);
+
+    res.status(200).json(artist);
+  } catch (error) {
+    logger.error(`Error in getArtistByName: ${error.message}.`);
+
+    res.status(400).json({ error: error.message });
+  }
+};
+
 const updatedArtist = async (req, res) => {
   try {
-    const artist = await artistService.updatedArtist(req.params.id, req.body);
+    let artistData = req.body;
+    
+    // If there are new optimized images uploaded, we should update the album's image field
+    if (req.optimizedImages && req.optimizedImages.length > 0) {
+      artistData.images = req.optimizedImages.map(img => ({ path: img.path }));
+    }
+
+
+    const artist = await artistService.updatedArtist(req.params.id, artistData);
 
     if (!artist) {
       logger.warn(`Artist with ID ${req.params.id} not found for update.`);
@@ -103,6 +142,17 @@ const getArtistsByGenre = async (req, res) => {
   }
 };
 
+const getTop10ArtistsByListens = async (req, res) => {
+  try {
+    const topArtists = await artistService.getTop10ArtistsByNumberOfListens();
+    logger.info("Top 10 artists retrieved successfully.");
+    res.status(200).json(topArtists);
+  } catch (error) {
+    logger.error(`Error in getTop10ArtistsByListens: ${error.message}`);
+    res.status(500).json({ error: error.message });
+  }
+};
+
 module.exports = {
   createArtist,
   getAllArtist,
@@ -110,4 +160,6 @@ module.exports = {
   updatedArtist,
   deleteArtist,
   getArtistsByGenre,
+  getArtistByName,
+  getTop10ArtistsByListens
 };

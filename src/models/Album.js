@@ -26,8 +26,11 @@ module.exports = (mongoose) => {
         type: Date,
       },
       // Album cover image
-      image: {
-        type: String,
+      images: {
+        type: [{
+          path: { type: String }
+        }],
+        default: []
       },
       // Audio tracks list (this can be an array of track references)
       audioTracks: {
