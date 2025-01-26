@@ -135,6 +135,7 @@ const getArtistsByGenre = async (req, res) => {
     const { page = 1, limit = 10 } = req.query;
 
     const artists = await artistService.getArtistsByGenre(genre, parseInt(page), parseInt(limit));
+
     res.status(200).json(artists);
   } catch (err) {
     logger.error(`Error in getArtistsByGenre: ${err.message}`);

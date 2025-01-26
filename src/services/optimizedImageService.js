@@ -2,6 +2,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const sharp = require('sharp');
 const logger = require('../utils/logger');
+const path = require('path');
 
 async function generateOptimizedVersions(filePath) {
     logger.info('🎨 Début de l\'optimisation des images');
@@ -21,7 +22,7 @@ async function generateOptimizedVersions(filePath) {
     try {
         // 2. VÉRIFICATIONS PRÉLIMINAIRES
         // await fs.access(filePath);
-        const outputDir = path.join('src', 'cdn', 'uploadsImage', 'optimized');
+        const outputDir = cb(null, path.join(__dirname, '..', 'cdn', 'uploadsImage', 'optimized'));
         await fs.mkdir(outputDir, { recursive: true });
 
         logger.debug({

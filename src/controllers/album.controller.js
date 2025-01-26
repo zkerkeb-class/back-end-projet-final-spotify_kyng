@@ -11,10 +11,10 @@ const createAlbum = async (req, res) => {
       throw new Error('No optimized images found.');
     }
     const albumData = {
-      title: req.body.title || faker.music.album(),
-      artistId: req.body.artistId || faker.person.fullName(),
-      releaseDate: req.body.releaseDate || new Date().getFullYear(),
-      genre: req.body.genre || faker.music.genre(),
+      title: req.body.title,
+      artistId: req.params.artistId,
+      releaseDate: req.body.releaseDate,
+      genre: req.body.genre,
       images: req.optimizedImages.map(img => ({
         path: img.path
       }))

@@ -4,6 +4,7 @@ const Joi = require('joi');
 const logger = require('../utils/logger');
 
 const Redis = require('ioredis');
+const Track = require('../models/Track')(mongoose);
 const redisUrl = process.env.REDIS_URL;
 
 // const redisClient = new Redis(redisUrl);
@@ -138,6 +139,47 @@ const deletePlaylist = async (id) => {
   }
 };
 
-module.exports = () => {
-  createPlaylist, getAllPlaylists, getPlaylistById, updatedPlaylist, deletePlaylist;
+const addTrackToPlaylist = async (playlistId, trackId) => {
+  try {
+    // Validate input
+    if (!playlistId || !trackId) {
+      throw new Error('Playlist ID and Track ID are required');
+    }
+
+    // Check if playlist exists
+    const playlist = await Playlist.findById(playlistId);
+    if (!playlist) {
+      throw new Error('Playlist not found');
+    }
+
+    // console.log('te : ', trackId)
+    const trackIdObject = mongoose.Types.ObjectId.isValid(trackId)
+          ? new mongoose.Types.ObjectId(trackId)
+          : trackId;
+    // Check if track exists
+    const track = await Track.findById(trackIdObject);
+    if (!track) {
+      throw new Error('Track not found');
+    }
+
+    // Add track to playlist's tracks
+    playlist.pistes_audio = playlist.pistes_audio 
+      ? `${playlist.pistes_audio},${trackId}` 
+      : trackId;
+
+    // Update playlist duration
+    playlist.duration += track.duration;
+
+    await playlist.save();
+
+    logger.info(`Track ${trackId} added to playlist ${playlistId}`);
+    return playlist;
+  } catch (error) {
+    logger.error(`Error adding track to playlist: ${error.message}`);
+    throw error;
+  }
+};
+
+module.exports = {
+  createPlaylist, getAllPlaylists, getPlaylistById, updatedPlaylist, deletePlaylist, addTrackToPlaylist
 };

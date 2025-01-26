@@ -2,8 +2,9 @@ const trackService = require('../services/trackService');
 const logger = require('../utils/logger');
 const { getBlobStream } = require('../utils/azureBlobHelper');
 const multer = require('multer');
-const { faker } = require('@faker-js/faker');
 const { ObjectId } = require('mongodb');
+const { faker } = require('@faker-js/faker');
+const { extractAudioMetadata } = require('../utils/metadataExtractor');
 
 const upload = multer({ dest: 'uploads/' });
 
@@ -24,18 +25,19 @@ const createTrack = async (req, res) => {
     let metadata = {};
     try {
       metadata = await extractAudioMetadata(convertedPath);
+      console.log('tt° : ', metadata)
     } catch (metadataError) {
       console.warn('Metadata extraction failed, generating fake data');
     }
 
     // Prepare track data with Faker-generated fallbacks
     const trackData = {
-      title: req.body.title || metadata.title || faker.music.songName(),
-      duration: req.body.duration || metadata.duration || faker.number.int({ min: 120, max: 300 }),
-      albumId: req.body.albumId,
-      artistId: req.body.artistId || metadata.artist || new ObjectId(),
-      isExplicit: req.body.isExplicit || faker.datatype.boolean({ probability: 0.2 }),
-      lyrics: req.body.lyrics || faker.lorem.paragraphs(2),
+      title: req.body.title || metadata.title,
+      duration: req.body.duration || metadata.duration,
+      albumId: req.params.albumId,
+      artistId: req.body.artistId || metadata.artist,
+      isExplicit: req.body.isExplicit,
+      lyrics: req.body.lyrics,
       audioLink: {
         originalName,
         convertedPath,
@@ -51,7 +53,7 @@ const createTrack = async (req, res) => {
         producer: faker.person.fullName(),
         songwriter: faker.person.fullName(),
       },
-      releaseYear: metadata.year || new Date().getFullYear()
+      releaseYear: req.body.isExplicit || metadata.year
     };
 
     // Call the service to create a track
@@ -247,7 +249,7 @@ const streamTrack = async (req, res) => {
       return res.status(404).json({ error: 'File not found.' });
     }
 
-    res.setHeader('Content-Type', 'audio/mpeg'); // Set the appropriate MIME type
+    res.setHeader('Content-Type', 'm4a', 'audio/mpeg'); // Set the appropriate MIME type
     blobStream.pipe(res); // Stream the audio file to the client
     logger.info(`Streaming file ${filename} successfully.`);
   } catch (error) {

@@ -8,7 +8,8 @@ const {imageUploadMiddleware, upload} = require('../cdn/middlewares/imageUploadM
 // router.post('/', albumController.createAlbum);
 
     
-router.post('/', upload.single('image'), imageUploadMiddleware, albumController.createAlbum);
+// router.post('/', upload.single('image'), imageUploadMiddleware, albumController.createAlbum);
+router.post('/:artistId', upload.single('image'), imageUploadMiddleware, albumController.createAlbum);
 // router.post('/', (req, res, next) => {
 //   upload(req, res, (err) => {
 //     if (err) {

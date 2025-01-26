@@ -44,7 +44,7 @@ app.use(express.urlencoded({ extended: true })); // Pour parser les données de 
 // Set up CORS options
 const corsOptions = {
   origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   // credentials: true,
 };

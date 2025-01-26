@@ -1,4 +1,6 @@
 const mongoose = require('mongoose');
+const { ObjectId } = mongoose.Types;  // Get ObjectId from mongoose.Types
+
 
 const Album = require('../models/Album')(mongoose);
 const Artist = require('../models/Artist')(mongoose);
@@ -190,10 +192,15 @@ const getAlbumsByArtist = async (artistId, page = 1, limit = 10) => {
     // }
 
     const skip = (page - 1) * limit;
+    const artistIdObject = mongoose.Types.ObjectId.isValid(artistId)
+      ? new mongoose.Types.ObjectId(artistId)
+      : artistId;
 
-    // Fetch albums filtered by artist
-    const albums = await Album.find({ artistId }).skip(skip).limit(limit);
-
+    // Find albums and count
+    const albums = await Album.find({ artistId: artistIdObject })
+      .populate('artistId')
+      .skip(skip)
+      .limit(limit);
     const totalCount = await Album.countDocuments({ artistId });
 
     const result = {
@@ -281,7 +288,7 @@ const getAlbumsByYear = async (year) => {
 
 const getTop10RecentAlbums = async () => {
   try {
-    const recentAlbums = await Album.find().sort({ releaseDate: -1 }).limit(10).populate('artistId', 'name');
+    const recentAlbums = await Album.find().sort({ releaseDate: -1 }).limit(10).populate('artistId');
 
     if (!recentAlbums || recentAlbums.length === 0) {
       logger.warn("No recent albums found.");

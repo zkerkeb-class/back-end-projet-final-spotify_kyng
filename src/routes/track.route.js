@@ -4,7 +4,7 @@ const audioMiddleware = require('../cdn/middlewares/audioMiddleware');
 const router = express.Router();
 
 
-router.post('/create', audioMiddleware, createTrack);
+router.post('/:albumId', audioMiddleware, createTrack);
 
 // Route for getting all tracks
 router.get('/', getAllTrack);
@@ -32,7 +32,7 @@ router.get('/genre/:genre', getTracksByGenre);
 
 router.get('/year/:year', getTracksByYear);
 
-router.get('/top/10', getTop10TracksByReleaseDate);
+router.get('/top/10-recent-tracks', getTop10TracksByReleaseDate);
 
 //test
 router.get('/stream/:filename', streamTrack); // Working http://localhost:8000/api/track/stream/audio-1734824388016-files-1734824380508-732747547.m4a

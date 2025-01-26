@@ -11,7 +11,7 @@ const { ObjectId } = require('mongodb');
 
 const artistSchema = Joi.object({
   name: Joi.string().optional().trim(),
-  genres: Joi.string().optional(),
+  genres: Joi.string().required(),
   images: Joi.array().items(
     Joi.object({
       path: Joi.string().required(),
@@ -22,11 +22,16 @@ const artistSchema = Joi.object({
 
 const createArtist = async (data) => {
   try {
-    if (data.images && data.images.length > 0) {
-      data.images = data.images.map(img => ({
-        ...img,
-        type: img.type || 'Profile'  // Assigne 'Profile' comme type par défaut si 'type' est manquant
-      }));
+    if (data.images && Array.isArray(data.images)) {
+      data.images = data.images.map(img => {
+        if (typeof img !== 'object' || !img.path) {
+          throw new Error('Invalid image structure. Each image must have a "path".');
+        }
+        return {
+          ...img,
+          type: img.type || 'Profile', // Assign 'Profile' as default if 'type' is missing
+        };
+      });
     }
     const { error, value } = artistSchema.validate(data);
 
@@ -189,6 +194,9 @@ const getArtistsByGenre = async (genre, page = 1, limit = 10) => {
     const skip = (page - 1) * limit;
 
     const artists = await Artist.find({ genres: genre }).skip(skip).limit(limit);
+    const artists2 = await Artist.find({ genres: genre });
+    console.log('tt : ', genre);
+
     const totalCount = await Artist.countDocuments({ genres: genre });
 
     const result = {
@@ -264,7 +272,7 @@ const getTop10ArtistsByNumberOfListens = async () => {
 
   // Step 5: Map the listen count to the corresponding artist
   const artistData = artists.map(artist => ({
-    artistName: artist.name,
+    artist: artist,
     totalListens: artistListenCount[artist._id.toString()],
   }));
 

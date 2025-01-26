@@ -104,7 +104,7 @@ const getAllTracks = async (page = 1, limit = 10) => {
 
     const totalCount = await Track.countDocuments();
 
-    const tracks = await Track.find().skip(skip).limit(limit);
+    const tracks = await Track.find().populate('artistId').skip(skip).limit(limit);
 
     const result = {
       tracks,
@@ -132,7 +132,8 @@ const getTrackById = async (id) => {
       throw new Error('Track ID is required.');
     }
 
-    const track = await Track.findById(id);
+    const track = await Track.findById(id).populate('artistId')
+    .populate('albumId');
 
     if (!track) {
       logger.warn(`Track with ID ${id} not found.`);
@@ -152,7 +153,8 @@ const getTrackByTitle = async (title) => {
 
     const track = await Track.find({
         title: title
-    });
+    }).populate('artistId')
+    .populate('albumId');
 
     if (!track) {
       logger.warn(`Track with title ${title} not found.`);
@@ -237,7 +239,7 @@ const getTracksByArtist = async (artistId, page = 1, limit = 10) => {
     const skip = (page - 1) * limit;
 
     // Fetch tracks filtered by artist
-    const tracks = await Track.find({ artistId }).skip(skip).limit(limit);
+    const tracks = await Track.find({ artistId }).populate('artistId').populate('albumId').skip(skip).limit(limit);
 
     const totalCount = await Track.countDocuments({ artistId });
 
@@ -273,7 +275,7 @@ const getTracksByAlbum = async (albumId, page = 1, limit = 10) => {
     const skip = (page - 1) * limit;
 
     // Fetch tracks filtered by album
-    const tracks = await Track.find({ albumId }).skip(skip).limit(limit);
+    const tracks = await Track.find({ albumId }).populate('artistId').populate('albumId').skip(skip).limit(limit);
 
     const totalCount = await Track.countDocuments({ albumId });
 
