@@ -2,7 +2,6 @@ const fs = require('fs').promises;
 const path = require('path');
 const sharp = require('sharp');
 const logger = require('../utils/logger');
-const path = require('path');
 
 async function generateOptimizedVersions(filePath) {
     logger.info('🎨 Début de l\'optimisation des images');
