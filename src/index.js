@@ -6,6 +6,7 @@ const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 //const Redis = require('ioredis');
 const dns = require('dns').promises; 
+const cors = require('cors');
 require('dotenv').config({ path: '../.env.dev' });
 const responseTime = require('response-time');
 
@@ -73,6 +74,17 @@ app.use(express.urlencoded({ extended: true })); // Pour parser les données de 
 app.use(globalRateLimiter);
 //app.use(querycacheMiddleware);
 
+
+// Set up CORS options
+const corsOptions = {
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  // credentials: true,
+};
+
+// Enable CORS
+app.use(cors(corsOptions));
 
 // Database connection function
 const connectDB = async () => {

@@ -62,12 +62,20 @@ const getValidFilePath = (audioFile) => {
 
 // Create Azure Storage credentials
 const getBlobServiceClient = () => {
-  if (!accountName || !accountKey) {
+  if (!accountName || !process.env.AZURE_STORAGE_SAS_TOKEN) {
     throw new Error('Azure storage credentials are not configured');
   }
 
-  const sharedKeyCredential = new StorageSharedKeyCredential(accountName, accountKey);
-  return new BlobServiceClient(`https://${accountName}.blob.core.windows.net`, sharedKeyCredential);
+  // const sharedKeyCredential = new StorageSharedKeyCredential(accountName, accountKey);
+  // const sasToken = process.env.AZURE_STORAGE_SAS_TOKEN;
+  const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
+  if (!connectionString) {
+    throw new Error('Azure storage connection string is not configured');
+  }
+
+  return BlobServiceClient.fromConnectionString(connectionString);
+  // return new BlobServiceClient(`https://${accountName}.blob.core.windows.net`, sharedKeyCredential);
+  // return new BlobServiceClient(`https://${accountName}.blob.core.windows.net?${sasToken}`);
 };
 function generateCloudFrontUrl(azureBlobUrl) {
   const cloudFrontBaseUrl = process.env.CLOUDFRONT_URL || "https://dclpocen9bkxu.cloudfront.net";

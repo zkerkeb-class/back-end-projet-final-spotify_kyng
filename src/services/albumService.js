@@ -1,6 +1,9 @@
 const mongoose = require('mongoose');
+const { ObjectId } = mongoose.Types;  // Get ObjectId from mongoose.Types
+
 
 const Album = require('../models/Album')(mongoose);
+const Artist = require('../models/Artist')(mongoose);
 const Joi = require('joi');
 const logger = require('../utils/logger');
 const Redis = require('ioredis');
@@ -9,12 +12,16 @@ const redisUrl = process.env.REDIS_URL;
 // const redisClient = new Redis(redisUrl);
 
 const albumSchema = Joi.object({
-  title: Joi.string().required().trim(),
+  title: Joi.string().optional().trim(),
   linkTitle: Joi.string().optional(),
   linkType: Joi.string().optional(),
-  artistId: Joi.string().required(),
+  artistId: Joi.string().optional(),
   releaseDate: Joi.date().optional(),
-  image: Joi.string().uri().optional(),
+  images: Joi.array().items(
+    Joi.object({
+      path: Joi.string().required()
+    })
+  ).optional(),
   audioTracks: Joi.array().items(Joi.string()).optional(),
   duration: Joi.number().min(0).optional(),
   genre: Joi.string().optional(),
@@ -23,6 +30,12 @@ const albumSchema = Joi.object({
 // TODO ajouter pour l'image un tableau de uri
 const createAlbum = async (data) => {
   try {
+    let artist = await Artist.find({ id: data.artistId });
+
+    if (!artist) {
+      throw new Error(`Artist with the name '${data.artist}' not found.`);
+    }
+
     const { error, value } = albumSchema.validate(data);
 
     if (error) {
@@ -95,10 +108,34 @@ const getAlbumById = async (id) => {
   }
 };
 
+const getAlbumByTitle = async (title) => {
+  try {
+    if (!title) {
+      throw new Error('Album title is required.');
+    }
+
+    const album = await Album.find({
+      title: title
+    }).populate('artistId', 'name');
+
+    if (!album) {
+      logger.warn(`Album with title ${title} not found.`);
+    }
+    return album;
+  } catch (error) {
+    logger.error(`Error fetching album by Title: ${error.message}.`);
+    throw error;
+  }
+};
+
 const updatedAlbum = async (id, data) => {
   try {
     if (!id) {
       throw new Error('Album ID is required.');
+    }
+
+    if (!data.artistId) {
+      delete data.artistId;
     }
 
     const { error, value } = albumSchema.validate(data, { allowUnknown: true });
@@ -107,9 +144,8 @@ const updatedAlbum = async (id, data) => {
       throw new Error(error.details[0].message);
     }
 
+    // Find the album by ID and update it with the new data
     const updatedAlbum = await Album.findByIdAndUpdate(id, value, { new: true });
-
-    // redisClient.del('albums:all'); // Verifier le cache
 
     if (updatedAlbum) {
       logger.info(`Album with ID ${id} updated successfully.`);
@@ -121,6 +157,7 @@ const updatedAlbum = async (id, data) => {
     throw error;
   }
 };
+
 
 const deleteAlbum = async (id) => {
   try {
@@ -155,10 +192,15 @@ const getAlbumsByArtist = async (artistId, page = 1, limit = 10) => {
     // }
 
     const skip = (page - 1) * limit;
+    const artistIdObject = mongoose.Types.ObjectId.isValid(artistId)
+      ? new mongoose.Types.ObjectId(artistId)
+      : artistId;
 
-    // Fetch albums filtered by artist
-    const albums = await Album.find({ artistId }).skip(skip).limit(limit);
-
+    // Find albums and count
+    const albums = await Album.find({ artistId: artistIdObject })
+      .populate('artistId')
+      .skip(skip)
+      .limit(limit);
     const totalCount = await Album.countDocuments({ artistId });
 
     const result = {
@@ -220,7 +262,7 @@ const getAlbumsByYear = async (year) => {
     }
 
     const cacheKey = `albums:year:${year}`;
-    
+
     // go check in redis cache if data is available
     // const cachedAlbums = await redisClient.get(cacheKey);
     if (cachedAlbums) {
@@ -244,6 +286,24 @@ const getAlbumsByYear = async (year) => {
   }
 };
 
+const getTop10RecentAlbums = async () => {
+  try {
+    const recentAlbums = await Album.find().sort({ releaseDate: -1 }).limit(10).populate('artistId');
+
+    if (!recentAlbums || recentAlbums.length === 0) {
+      logger.warn("No recent albums found.");
+      return { status: 404, message: "No recent albums found", data: null };
+    }
+
+    logger.info(`Found ${recentAlbums.length} recent albums.`);
+    return { status: 200, message: "Top 10 recent albums found", data: recentAlbums };
+  } catch (error) {
+    logger.error(`Error fetching top 10 recent albums: ${error.message}`);
+    return { status: 500, message: "Error fetching recent albums", data: null, error: error.message };
+  }
+};
+
+
 module.exports = {
   createAlbum,
   getAllAlbums,
@@ -252,5 +312,7 @@ module.exports = {
   deleteAlbum,
   getAlbumsByArtist,
   getAlbumsByGenre,
-  getAlbumsByYear
+  getAlbumsByYear,
+  getAlbumByTitle,
+  getTop10RecentAlbums
 };

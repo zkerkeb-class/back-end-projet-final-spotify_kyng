@@ -1,6 +1,10 @@
 const trackService = require('../services/trackService');
 const logger = require('../utils/logger');
+const { getBlobStream } = require('../utils/azureBlobHelper');
 const multer = require('multer');
+const { ObjectId } = require('mongodb');
+const { faker } = require('@faker-js/faker');
+const { extractAudioMetadata } = require('../utils/metadataExtractor');
 
 const upload = multer({ dest: 'uploads/' });
 
@@ -13,44 +17,43 @@ const createTrack = async (req, res) => {
       throw new Error('No audio files were uploaded.');
     }
 
-    // Extract form data and uploaded files
-    const {
-      title,
-      duration,
-      albumId,
-      isExplicit,
-      lyrics,
-      artistId,
-      collaborators,
-      credits,
-      numberOfListens,
-      popularity,
-      trackNumber,
-    } = req.body;
-
-    // Use the first uploaded file for this example
+    // Use the first uploaded file
     const uploadedFile = req.uploadedFiles[0];
-    const { originalName, convertedPath, size, mimetype } = uploadedFile;
+    const { convertedPath, originalName, size, mimetype } = uploadedFile;
 
-    // Prepare data for the service
+    // Extract metadata from the audio file
+    let metadata = {};
+    try {
+      metadata = await extractAudioMetadata(convertedPath);
+      console.log('tt° : ', metadata)
+    } catch (metadataError) {
+      console.warn('Metadata extraction failed, generating fake data');
+    }
+
+    // Prepare track data with Faker-generated fallbacks
     const trackData = {
-      title,
-      duration,
-      albumId,
-      isExplicit,
-      lyrics,
-      artistId,
-      collaborators,
-      credits,
-      numberOfListens,
-      popularity,
-      trackNumber,
-      audioFile: {
+      title: req.body.title || metadata.title,
+      duration: req.body.duration || metadata.duration,
+      albumId: req.params.albumId,
+      artistId: req.body.artistId || metadata.artist,
+      isExplicit: req.body.isExplicit,
+      lyrics: req.body.lyrics,
+      audioLink: {
         originalName,
         convertedPath,
         size,
         mimetype,
       },
+      // album: req.body.album || metadata.album || faker.music.genre(),
+      numberOfListens: 0,
+      popularity: 0,
+      trackNumber: 0,
+      collaborators: [faker.person.fullName(), faker.person.fullName()],
+      credits: {
+        producer: faker.person.fullName(),
+        songwriter: faker.person.fullName(),
+      },
+      releaseYear: req.body.isExplicit || metadata.year
     };
 
     // Call the service to create a track
@@ -90,6 +93,25 @@ const getTrackById = async (req, res) => {
     res.status(200).json(track);
   } catch (error) {
     logger.error(`Error in getTrackById: ${error.message}.`);
+
+    res.status(400).json({ error: error.message });
+  }
+};
+
+const getTrackByTitle = async (req, res) => {
+  try {
+    const track = await trackService.getTrackByTitle(req.params.title);
+
+    if (!track) {
+      logger.warn(`Track with title ${req.params.title} not found`);
+
+      return res.status(404).json({ error: 'Track not found.' });
+    }
+    logger.info(`Track with title ${req.params.title} retrieved successfully.`);
+
+    res.status(200).json(track);
+  } catch (error) {
+    logger.error(`Error in getTrackByTitle: ${error.message}.`);
 
     res.status(400).json({ error: error.message });
   }
@@ -212,6 +234,42 @@ const getTracksByYear = async (req, res) => {
   }
 };
 
+const streamTrack = async (req, res) => {
+  const { filename } = req.params;
+  console.log('t : ', filename)
+  try {
+    if (!filename) {
+      return res.status(400).json({ error: 'Filename is required.' });
+    }
+
+    // Get a readable stream from Azure Blob Storage
+    const blobStream = await getBlobStream('spotify', filename); // Replace 'spotify' with your container name
+
+    if (!blobStream) {
+      return res.status(404).json({ error: 'File not found.' });
+    }
+
+    res.setHeader('Content-Type', 'm4a', 'audio/mpeg'); // Set the appropriate MIME type
+    blobStream.pipe(res); // Stream the audio file to the client
+    logger.info(`Streaming file ${filename} successfully.`);
+  } catch (error) {
+    logger.error(`Error streaming track: ${error.message}`);
+    res.status(500).json({ error: 'Error streaming track.' });
+  }
+};
+
+const getTop10TracksByReleaseDate = async (req, res) => {
+  const result = await trackService.getTop10TracksByReleaseDate();
+
+  if (result.status === 200) {
+    logger.info(result.message);
+    return res.status(200).json(result.data);
+  } else {
+    logger.error(`Error streaming track: ${result.message}`);
+    return res.status(result.status).json({ message: result.message, error: result.error });
+  }
+};
+
 
 module.exports = {
   createTrack,
@@ -222,5 +280,8 @@ module.exports = {
   getTracksByArtist,
   getTracksByAlbum,
   getTracksByGenre,
-  getTracksByYear
+  getTracksByYear,
+  streamTrack,
+  getTrackByTitle,
+  getTop10TracksByReleaseDate
 };
