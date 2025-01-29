@@ -49,18 +49,19 @@ const upload = multer({
 
 // Middleware to handle audio uploads and convert to m4a
 const audioMiddleware = (req, res, next) => {
-  console.log('IN: ', req.files);
+  console.log('Requête en cours...');
 
   upload.array('files', 10)(req, res, async (err) => {
-    
+    console.log('Fichiers reçus :', req.files); 
+
     if (err instanceof multer.MulterError) {
-      console.error('Multer error:', err.message);
+      console.error('Erreur Multer :', err.message);
       return res.status(400).json({
         error: 'Upload error',
         details: err.message,
       });
     } else if (err) {
-      console.error('Server error during file upload:', err.message);
+      console.error('Erreur serveur :', err.message);
       return res.status(500).json({
         error: 'Server error',
         details: err.message,
@@ -68,40 +69,17 @@ const audioMiddleware = (req, res, next) => {
     }
 
     if (!req.files || req.files.length === 0) {
-      console.error('No files were uploaded');
+      console.error('Aucun fichier reçu');
       return res.status(400).json({
         error: 'No files uploaded',
       });
     }
 
-    req.uploadedFiles = req.files.map((file) => ({
-      originalName: file.originalname,
-      filename: file.filename,
-      path: file.path,
-      size: file.size,
-      mimetype: file.mimetype,
-    }));
-
-    console.log('Files uploaded successfully:', req.uploadedFiles);
-
-    // Convert uploaded files to m4a format
-    try {
-      for (const file of req.uploadedFiles) {
-        const convertedPath = await convertToM4a(file.path, optimizedDir);
-        file.convertedPath = convertedPath; // Attach the converted path to the file info
-      }
-
-      console.log('Files converted to m4a format successfully');
-      next(); // Proceed to the next middleware or controller
-    } catch (conversionError) {
-      console.error('Error during audio conversion:', conversionError.message);
-      return res.status(500).json({
-        error: 'Audio conversion failed',
-        details: conversionError.message,
-      });
-    }
+    console.log('Téléchargement réussi :', req.files);
+    next();
   });
 };
+
 
 // Function to convert any audio file to m4a using ffmpeg
 async function convertToM4a(inputPath, outputDir) {

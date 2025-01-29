@@ -17,11 +17,13 @@ const {
   MONGO_URI,
   // AZURE_STORAGE_ACCOUNT_KEY,
   // AZURE_STORAGE_ACCOUNT_NAME,
+  CLOUDFRONT_URL,
 } = process.env;
 
 module.exports = {
   development: {
     // uri: `mongodb://${DB_HOST}:${DB_PORT}/${DB_NAME}`
     uri: `${MONGO_URI}`,
+    cloudfront_uri:`${CLOUDFRONT_URL}`,
   },
 };

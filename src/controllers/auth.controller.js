@@ -8,7 +8,7 @@ const loginController = async (req, res) => {
     const token = await authService.loginUser(email, password);
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const sessionData = { id: decoded.id, email: decoded.email, role: decoded.role };
-
+    console.log("Calling setSession with token:", token, "and data:", sessionData);
     await sessionCacheService.setSession(token, sessionData);
     res.status(200).json({ token });
   } catch (error) {

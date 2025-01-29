@@ -69,6 +69,16 @@ const getBlobServiceClient = () => {
   const sharedKeyCredential = new StorageSharedKeyCredential(accountName, accountKey);
   return new BlobServiceClient(`https://${accountName}.blob.core.windows.net`, sharedKeyCredential);
 };
+function generateCloudFrontUrl(azureBlobUrl) {
+  const cloudFrontBaseUrl = process.env.CLOUDFRONT_URL || "https://dclpocen9bkxu.cloudfront.net";
+
+  const path = azureBlobUrl.split(".blob.core.windows.net/")[1];
+  if (!path) {
+      throw new Error("URL Azure Blob invalide : " + azureBlobUrl);
+  }
+
+  return `${cloudFrontBaseUrl}/${path}`;
+}
 
 async function uploadToAzureStorage(filePath, containerName) {
   if (!filePath) {
@@ -96,8 +106,13 @@ async function uploadToAzureStorage(filePath, containerName) {
     const fileBuffer = await fs.readFile(filePath);
     await blockBlobClient.upload(fileBuffer, fileBuffer.length);
 
+   // Générer l'URL CloudFront à partir du blobName
+   //const cloudfront_uri = `${process.env.CLOUDFRONT_URL}/${blobName}`;
+   const cloudfrontUrl = generateCloudFrontUrl(blockBlobClient.url);
+
     logger.info(`File uploaded successfully: ${blockBlobClient.url}`);
-    return blockBlobClient.url;
+    //return blockBlobClient.url;
+    return cloudfrontUrl;
   } catch (error) {
     logger.error('Azure upload error:', error);
     throw new Error(`Failed to upload file to Azure: ${error.message}`);

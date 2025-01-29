@@ -6,28 +6,41 @@ const authMiddleware = async (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
 
   if (!token) {
+    console.log("No token provided in the request headers");
     return res.status(403).json({ message: 'Access denied, no token provided.' });
   }
 
   try {
+    console.log("Token found:", token);
+
+    // Vérifie si la session existe dans Redis
     const cachedSession = await sessionCacheService.getSession(token);
+    console.log("Cached session:", cachedSession);
+
     if (cachedSession) {
-      req.user = cachedSession; 
+      req.user = cachedSession; // Ajoute les données utilisateur au `req`
+      console.log("Session found in cache, proceeding to the next middleware");
       return next();
     }
+
+    // Si pas dans Redis, vérifie le token JWT
+    console.log("Session not found in cache, verifying JWT");
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id);
-    if (!user) {
-      throw new Error('User not found');
-    }
-    const sessionData = { id: user._id, email: user.email, role: user.role };
+
+    console.log("JWT decoded:", decoded);
+
+    const sessionData = { id: decoded.id, email: decoded.email, role: decoded.role };
+
+    console.log("Creating new session in cache:", sessionData);
     await sessionCacheService.setSession(token, sessionData);
-    req.user = sessionData;
+
+    req.user = sessionData; // Ajoute les données utilisateur au `req`
     next();
   } catch (err) {
-    console.error('AuthMiddleware Error:', err.message);
+    console.error("Error in authMiddleware:", err.message);
     return res.status(400).json({ message: 'Invalid token.' });
   }
 };
+
 
 module.exports = authMiddleware;
