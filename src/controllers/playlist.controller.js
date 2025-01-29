@@ -19,7 +19,7 @@ const createPlaylist = async (req, res) => {
 
 const getAllPlaylist = async (req, res) => {
   try {
-    const playlists = await playlistService.getAllPlaylist();
+    const playlists = await playlistService.getAllPlaylists();
     logger.info(`Playlist list retrieval request handled successfully.`);
 
     res.status(200).json(playlists);
@@ -87,10 +87,26 @@ const deletePlaylist = async (req, res) => {
   }
 };
 
+const addTrackToPlaylist = async (req, res) => {
+  try {
+    const { playlistId } = req.params;
+    const { trackId } = req.body;
+
+    const updatedPlaylist = await playlistService.addTrackToPlaylist(playlistId, trackId);
+    
+    logger.info(`Track added to playlist ${playlistId} successfully.`);
+    res.status(200).json(updatedPlaylist);
+  } catch (error) {
+    logger.error(`Error adding track to playlist: ${error.message}`);
+    res.status(400).json({ error: error.message });
+  }
+};
+
 module.exports = {
   createPlaylist,
   getAllPlaylist,
   getPlaylistById,
   updatedPlaylist,
   deletePlaylist,
+  addTrackToPlaylist
 };

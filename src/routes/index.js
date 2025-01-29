@@ -11,6 +11,7 @@ const artistRoutes = require('../routes/artist.route');
 const globalRateLimiter = require('../middlewares/rateLimiter');
 const routeTest = require('./test.route');
 const tracksRoute = require('./track.route');
+const playlistRoutes = require('./playlist.route');
 const authRoutes = require('./auth.route');
 const testauth = require('./testauth');
 
@@ -24,6 +25,7 @@ router.use('/testauth', testauth);
 router.use('/seed', seedRoutes);
 router.use('/album', albumRoutes);
 router.use('/artist', artistRoutes);
+router.use('/playlist', playlistRoutes);
 
 // router.use(globalRateLimiter);
 router.use(routeTest);

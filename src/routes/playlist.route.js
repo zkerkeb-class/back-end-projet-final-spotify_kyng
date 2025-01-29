@@ -8,7 +8,7 @@ const authMiddleware = require('../middlewares/authMiddleware');
 router.post('/', playlistController.createPlaylist);
 
 // Route pour récupérer toutes les playlists avec pagination
-router.get('/', playlistController.getAllPlaylists);
+router.get('/', playlistController.getAllPlaylist);
 
 // Route pour récupérer une playlist par ID
 router.get('/:id', playlistController.getPlaylistById);
@@ -18,5 +18,7 @@ router.put('/:id', playlistController.updatedPlaylist);
 
 // Route pour supprimer une playlist
 router.delete('/:id', playlistController.deletePlaylist);
+
+router.post('/:playlistId/tracks', playlistController.addTrackToPlaylist);
 
 module.exports = router;
