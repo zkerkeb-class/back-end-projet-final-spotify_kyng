@@ -76,7 +76,7 @@ const measureRedisLatency = async () => {
 const measureMediaProcessingTime = async (file) => {
   const startTime = Date.now();
   // Simuler un traitement de média
-  await new Promise(resolve => setTimeout(resolve, 1000)); // Exemple de traitement
+  await new Promise(resolve => setTimeout(resolve, 1000)); 
   const processingTime = Date.now() - startTime;
   metrics.mediaProcessingTime = processingTime;
   console.log(`Temps de traitement des médias : ${processingTime} ms`);

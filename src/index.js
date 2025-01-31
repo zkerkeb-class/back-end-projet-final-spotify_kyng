@@ -5,7 +5,7 @@ const timeout = require('express-timeout-handler');
 //const cookieParser = require('cookie-parser');
 const mongoose = require('mongoose');
 const responseTime = require('response-time');
-const { measureResponseTime,trackBandwidth, trackSuccessFailure } = require('./services/monitoringService');
+const { trackBandwidth, trackSuccessFailure } = require('./services/monitoringService');
 const dotenv = require('dotenv');
 //const Redis = require('ioredis');
 //const dns = require('dns').promises; 
@@ -28,7 +28,16 @@ const port = 8000;
 
 app.use(helmet());
 
+/*app.use(responseTime((req, res, time) => {
+  console.log(`Requête ${req.method} ${req.url} - Temps de réponse : ${time.toFixed(2)} ms`);
+}));*/
+const metrics = {
+  responseTime: 0, // Initialiser le temps de réponse à 0
+};
+
+// Middleware pour mesurer le temps de réponse
 app.use(responseTime((req, res, time) => {
+  metrics.responseTime = time; // Mettre à jour le temps de réponse dans l'objet global
   console.log(`Requête ${req.method} ${req.url} - Temps de réponse : ${time.toFixed(2)} ms`);
 }));
 
@@ -124,10 +133,15 @@ app.use((err, req, res, next) => {
   }
   next(err);
 });*/
-app.use(measureResponseTime);
+//app.use(measureResponseTime);
 app.use(trackBandwidth);
 app.use(trackSuccessFailure);
-
+app.get('/api/response-time', (req, res) => {
+  const responseTimeData = {
+    responseTime: metrics.responseTime, // Récupérer le temps de réponse
+  };
+  res.json(responseTimeData); // Renvoyer le temps de réponse au format JSON
+});
 // Routes
 
 app.use('/api', router);
