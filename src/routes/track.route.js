@@ -1,8 +1,9 @@
 const express = require('express');
-const { createTrack, getAllTrack, getTrackById, updatedTrack, deleteTrack, getTracksByArtist, getTracksByAlbum, getTracksByGenre, getTracksByYear, streamTrack, getTrackByTitle, getTop10TracksByReleaseDate } = require('../controllers/track.controller');
+const { createTrack, getAllTrack, getTrackById, updatedTrack, deleteTrack, getTracksByArtist, getTracksByAlbum, getTracksByGenre, getTracksByYear, streamTrack, getTrackByTitle, getTop10TracksByReleaseDate, advancedFilter } = require('../controllers/track.controller');
 const audioMiddleware = require('../cdn/middlewares/audioMiddleware'); 
 const router = express.Router();
 
+router.get('/filter', advancedFilter);
 
 router.post('/:albumId', audioMiddleware, createTrack);
 
@@ -37,5 +38,8 @@ router.get('/top/10-recent-tracks', getTop10TracksByReleaseDate);
 //test
 router.get('/stream/:filename', streamTrack); // Working http://localhost:8000/api/track/stream/audio-1734824388016-files-1734824380508-732747547.m4a
 //fin
+
+
+
 
 module.exports = router;

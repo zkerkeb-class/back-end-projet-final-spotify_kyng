@@ -7,6 +7,8 @@ const { uploadToAzureStorage } = require('./seedService');
 const Artist = require('../models/Artist')(mongoose);
 const { ObjectId } = require('mongodb');
 const { Types } = require('mongoose');
+const Album = require('../models/Album')(mongoose);
+const Playlist = require('../models/Playlist')(mongoose);
 
 // const redisClient = require('../config/redis');
 // const Playlist = require('../models/Playlist');
@@ -48,7 +50,12 @@ const createTrack = async (data) => {
     } else {
       data.artistId = null; // or remove it entirely using `delete data.artistId`
     }
-    console.log('tt : ', data.artistId)
+    if (albumId && mongoose.Types.ObjectId.isValid(albumId)) {
+      data.albumId = new Types.ObjectId(albumId);
+    } else {
+      data.albumId = null; // or remove it entirely using `delete data.artistId`
+    }
+    // console.log('tt : ', data.artistId)
     // Convert albumId to ObjectId if it's a valid format, otherwise set it to null
     if (albumId && mongoose.Types.ObjectId.isValid(albumId)) {
       data.albumId = new Types.ObjectId(albumId);
@@ -389,6 +396,135 @@ const getTop10TracksByReleaseDate = async () => {
 };
 
 
+const advancedFilter = async (filters, sorts, page, limit) => {
+  try {
+    let filterQuery = {};
+
+    // Filter by artist
+    if (filters.artist) {
+      const artistNames = filters.artist.map(name => name.trim());
+      const artists = await Artist.find({ name: { $in: artistNames } });
+      const artistIds = artists.map(artist => artist._id);
+      filterQuery.artistId = { $in: artistIds };
+    }
+
+    // Filter by album
+    if (filters.album) {
+      const albumNames = filters.album.map(name => name.trim());
+      const albums = await Album.find({ title: { $in: albumNames } });
+      const albumIds = albums.map(album => album._id);
+      filterQuery.albumId = { $in: albumIds };
+    }
+
+    // Filter by genre (from both Album and Artist models)
+    if (filters.genre) {
+      // Handle genres in Album model
+      const albumGenres = await Album.find({ genres: { $in: filters.genre } });
+      const albumIds = albumGenres.map(album => album._id);
+      
+      // Handle genres in Artist model
+      const artistGenres = await Artist.find({ genres: { $in: filters.genre } });
+      const artistIds = artistGenres.map(artist => artist._id);
+      
+      // Combine album and artist IDs for filtering tracks
+      const trackQuery = {
+        $or: [
+          { albumId: { $in: albumIds } },
+          { artistId: { $in: artistIds } }
+        ]
+      };
+      
+      filterQuery = { ...filterQuery, ...trackQuery };
+    }
+
+    // Filter by year range
+    if (filters.year) {
+      filterQuery.releaseYear = { $gte: filters.year.start, $lte: filters.year.end };
+    }
+
+    // Filter by duration range
+    if (filters.duration) {
+      filterQuery.duration = { $gte: filters.duration.min, $lte: filters.duration.max };
+    }
+
+    // Filter by popularity
+    if (filters.popularity) {
+      filterQuery.popularity = { $gte: filters.popularity };
+    }
+
+    // Filter by playlist
+    if (filters.playlist) {
+      const playlists = await Playlist.find({ name: filters.playlist });
+      const playlistIds = playlists.map(playlist => playlist._id);
+      filterQuery.playlistId = { $in: playlistIds };
+    }
+
+    // Sorting
+    let sortQuery = {};
+    sorts.forEach(sort => {
+      if (sort.field === 'duration') {
+        sortQuery.duration = sort.direction === 'desc' ? -1 : 1;
+      } else if (sort.field === 'releaseDate') {
+        sortQuery.releaseDate = sort.direction === 'desc' ? -1 : 1;
+      } else if (sort.field === 'popularity') {
+        sortQuery.popularity = sort.direction === 'desc' ? -1 : 1;
+      } else if (sort.field === 'title') {
+        sortQuery.title = sort.direction === 'desc' ? -1 : 1;
+      } else if (sort.field === 'trackCount') {
+        sortQuery.trackCount = sort.direction === 'desc' ? -1 : 1;
+      }
+    });
+
+    const skip = (page - 1) * limit;
+
+    const results = await Track.find(filterQuery)
+      .populate('artistId')
+      .populate('albumId')
+      .sort(sortQuery)
+      .skip(skip)
+      .limit(limit);
+
+    // Add reasons for the filters
+    const reasons = results.map(track => {
+      const reason = [];
+      if (filters.artist) reason.push(`Filtered by artist(s): ${filters.artist.join(', ')}`);
+      if (filters.album) reason.push(`Filtered by album(s): ${filters.album.join(', ')}`);
+      if (filters.genre) reason.push(`Filtered by genre(s): ${filters.genre.join(', ')}`);
+      if (filters.year) reason.push(`Filtered by release year between ${filters.year.start} and ${filters.year.end}`);
+      if (filters.duration) reason.push(`Filtered by track duration between ${filters.duration.min} and ${filters.duration.max} seconds`);
+      if (filters.popularity) reason.push(`Filtered by popularity greater than or equal to ${filters.popularity}`);
+      return {
+        ...track.toObject(),
+        reasons: reason,
+      };
+    });
+
+    logger.info(`Successfully fetched ${results.length} tracks based on the applied filters.`, {
+      filters: filters,
+      totalResults: results.length,
+      reasons: reasons,
+    });
+    
+    return {
+      status: 200,
+      data: reasons,
+    };
+  } catch (error) {
+    console.error('Error in advancedFilter service:', error);
+    return {
+      status: 500,
+      message: 'Error fetching filtered tracks',
+      data: null,
+      error: error.message,
+    };
+  }
+};
+
+
+
+
+
+
 module.exports = {
   createTrack,
   getAllTracks,
@@ -400,5 +536,6 @@ module.exports = {
   getTracksByGenre,
   getTracksByYear,
   getTrackByTitle,
-  getTop10TracksByReleaseDate
+  getTop10TracksByReleaseDate,
+  advancedFilter
 };

@@ -15,6 +15,7 @@ const playlistRoutes = require('./playlist.route');
 const authRoutes = require('./auth.route');
 const testauth = require('./testauth');
 const metricsRoutes = require('./metrics.route');
+const searchRoutes = require('./search.route');
 
 
 // // Route for generating a specific number of MP3 metadata entries
@@ -28,6 +29,7 @@ router.use('/seed', seedRoutes);
 router.use('/album', albumRoutes);
 router.use('/artist', artistRoutes);
 router.use('/playlist', playlistRoutes);
+router.use('/search', searchRoutes);
 
 // router.use(globalRateLimiter);
 router.use(routeTest);

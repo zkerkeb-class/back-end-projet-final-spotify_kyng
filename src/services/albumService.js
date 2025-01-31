@@ -304,6 +304,57 @@ const getTop10RecentAlbums = async () => {
 };
 
 
+
+// SEARCH
+
+const searchAlbums = async (filters, page = 1, limit = 10) => {
+  try {
+    const query = {};
+
+    if (filters.title) {
+      query.title = { $regex: filters.title, $options: 'i' };
+    }
+
+    if (filters.artistName) {
+      const artist = await Artist.findOne({ name: { $regex: filters.artistName, $options: 'i' } });
+      if (artist) query.artistId = artist._id;
+    }
+
+    if (filters.genre) {
+      query.genre = { $regex: filters.genre, $options: 'i' };
+    }
+
+    if (filters.releaseYear) {
+      query.releaseDate = {
+        $gte: new Date(`${filters.releaseYear}-01-01`),
+        $lt: new Date(`${Number(filters.releaseYear) + 1}-01-01`)
+      };
+    }
+
+    const skip = (page - 1) * limit;
+    const totalCount = await Album.countDocuments(query);
+    const albums = await Album.find(query)
+      .populate('artistId', 'name')
+      .skip(skip)
+      .limit(limit);
+
+    logger.info(`Found ${totalCount} results for this research.`);
+
+    return {
+      albums,
+      meta: {
+        total: totalCount,
+        page,
+        limit,
+        totalPages: Math.ceil(totalCount / limit),
+      },
+    };
+  } catch (error) {
+    logger.error(`Error searching albums: ${error.message}`);
+    throw error;
+  }
+};
+
 module.exports = {
   createAlbum,
   getAllAlbums,
@@ -314,5 +365,6 @@ module.exports = {
   getAlbumsByGenre,
   getAlbumsByYear,
   getAlbumByTitle,
-  getTop10RecentAlbums
+  getTop10RecentAlbums,
+  searchAlbums
 };
