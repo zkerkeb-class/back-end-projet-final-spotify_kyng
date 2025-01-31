@@ -3,21 +3,13 @@ const helmet = require('helmet');
 //const csurf = require('csurf');
 //const cookieParser = require('cookie-parser');
 const mongoose = require('mongoose');
+const responseTime = require('response-time');
+const { measureResponseTime,trackBandwidth, trackSuccessFailure } = require('./services/monitoringService');
 const dotenv = require('dotenv');
 //const Redis = require('ioredis');
-const dns = require('dns').promises; 
+//const dns = require('dns').promises; 
 const cors = require('cors');
 require('dotenv').config({ path: '../.env.dev' });
-const responseTime = require('response-time');
-
-const os = require('os');
-console.log('CPU Usage:', os.loadavg()); 
-console.log('Free Memory:', os.freemem()); 
-console.log('Total Memory:', os.totalmem()); 
-const busboy = require('connect-busboy');
-
-
-
 
 const path = require('path');
 // const scheduleBackup = require('./services/backupService.js');
@@ -25,7 +17,7 @@ const { scheduleTemporaryFileCleanup } = require('./services/cleanService.js');
 
 const router = require('./routes/index.js');
 const config = require('./config/config.js')[process.env.NODE_ENV || 'development'];
-//const querycacheMiddleware = require('./middlewares/querycache.js');
+const querycacheMiddleware = require('./middlewares/querycache.js');
 const globalRateLimiter = require('./middlewares/rateLimiter.js');
 
 dotenv.config();
@@ -41,30 +33,10 @@ const port = 8000;
 // redisClient.on('error', (err) => console.error(`Erreur Redis`, err));
 
 app.use(helmet());
+
 app.use(responseTime((req, res, time) => {
   console.log(`Requête ${req.method} ${req.url} - Temps de réponse : ${time.toFixed(2)} ms`);
 }));
-app.use((req, res, next) => {
-  res.on('finish', () => {
-    console.log(`Requête ${req.method} ${req.url} - Statut : ${res.statusCode}`);
-  });
-  next();
-});
-app.use(busboy());
-app.use((req, res, next) => {
-  let dataTransferred = 0;
-
-  req.on('data', chunk => {
-    dataTransferred += chunk.length;
-  });
-
-  req.on('end', () => {
-    console.log(`Bande passante utilisée : ${dataTransferred} octets`);
-  });
-
-  next();
-});
-
 
 //app.use(cookieParser());
 app.use(express.json()); // Pour parser le JSON dans les requêtes
@@ -72,7 +44,7 @@ app.use(express.urlencoded({ extended: true })); // Pour parser les données de 
 //const csrfProtection = csurf({ cookie: true });
 //app.use(csrfProtection);
 app.use(globalRateLimiter);
-//app.use(querycacheMiddleware);
+app.use(querycacheMiddleware);
 
 
 // Set up CORS options
@@ -92,8 +64,8 @@ const connectDB = async () => {
     await mongoose.connect(config.uri, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-      connectTimeoutMS: 5000, 
-      socketTimeoutMS: 45000,// timeout pour les req si une req prend plus de 45s elle sera annulee
+      //connectTimeoutMS: 5000, 
+      //socketTimeoutMS: 45000,// timeout pour les req si une req prend plus de 45s elle sera annulee
     });
     console.log('MongoDB connected successfully');
   } catch (err) {
@@ -101,22 +73,8 @@ const connectDB = async () => {
     process.exit(1);
   }
 };
-mongoose.set('debug', true);
+mongoose.set('debug', true);//Temps d'exécution des requêtes de base de données
 
-// Redis connection
-// const connectRedis = async(url) => {
-//   try {
-//     // Use IP lookup before connection
-//     // const ip = await dns.lookup(new URL(url).hostname);
-
-//     redisClient = new Redis(url);
-
-//     redisClient.on('connect', () => console.log('Redis connecté'));
-//     redisClient.on('error', (err) => console.error(`Erreur Redis`, err));
-//   } catch (error) {
-//     console.error('Redis connection failed:', error);
-//   }
-// }
 // Application initialization function
 const initializeApp = async () => {
   try {
@@ -156,6 +114,12 @@ app.use((err, req, res, next) => {
   }
   next(err);
 });*/
+app.use(measureResponseTime);
+app.use(trackBandwidth);
+app.use(trackSuccessFailure);
+
+// Routes
+
 app.use('/api', router);
 
 const startServer = async () => {
@@ -164,12 +128,14 @@ const startServer = async () => {
 
   // redisClient = await connectRedis(redisUrlEx);
 
+  
 
   // Start Express server
   app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
   });
 };
+
 
 process.on('SIGINT', async () => {
   try {

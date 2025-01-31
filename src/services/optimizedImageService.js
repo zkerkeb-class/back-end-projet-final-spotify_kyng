@@ -3,7 +3,7 @@ const path = require('path');
 const sharp = require('sharp');
 const logger = require('../utils/logger');
 
-async function generateOptimizedVersions(filePath) {
+async function generateOptimizedVersions(fileBuffer, originalFileName) {
     logger.info('🎨 Début de l\'optimisation des images');
 
     // 1. CONFIGURATION
@@ -20,8 +20,7 @@ async function generateOptimizedVersions(filePath) {
 
     try {
         // 2. VÉRIFICATIONS PRÉLIMINAIRES
-        // await fs.access(filePath);
-        const outputDir = cb(null, path.join(__dirname, '..', 'cdn', 'uploadsImage', 'optimized'));
+        const outputDir = path.join(__dirname, '..', 'cdn', 'uploadsImage', 'optimized');
         await fs.mkdir(outputDir, { recursive: true });
 
         logger.debug({
@@ -34,11 +33,13 @@ async function generateOptimizedVersions(filePath) {
             Object.entries(sizes).flatMap(async ([nomTaille, taille]) => {
                 return await Promise.all(
                     Object.entries(formats).map(async ([format, options]) => {
-                        const nomFichier = path.basename(filePath, path.extname(filePath));
+                        const nomFichier = path.basename(originalFileName, path.extname(originalFileName));
                         const cheminSortie = path.join(outputDir, `${nomFichier}_${nomTaille}.${format}`);
 
                         try {
-                            const resultat = await sharp(filePath)
+                            logger.debug(`Traitement de l'image pour la taille ${nomTaille} et le format ${format}`);
+
+                            const resultat = await sharp(fileBuffer)
                                 .resize(taille, taille, { fit: 'inside', withoutEnlargement: true })
                                 .toFormat(format, options)
                                 .toFile(cheminSortie);
@@ -90,6 +91,6 @@ async function generateOptimizedVersions(filePath) {
         }, '💥 Erreur fatale lors de l\'optimisation');
         throw new Error('Échec de l\'optimisation de l\'image');
     }
-} 
+}
 
 module.exports = { generateOptimizedVersions };

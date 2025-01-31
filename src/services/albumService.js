@@ -30,8 +30,8 @@ const albumSchema = Joi.object({
 // TODO ajouter pour l'image un tableau de uri
 const createAlbum = async (data) => {
   try {
-    let artist = await Artist.find({ id: data.artistId });
-
+    //let artist = await Artist.find({ id: data.artistId });
+    let artist = await Artist.findById(data.artistId);
     if (!artist) {
       throw new Error(`Artist with the name '${data.artist}' not found.`);
     }

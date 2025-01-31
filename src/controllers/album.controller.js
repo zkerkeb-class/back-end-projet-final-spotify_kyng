@@ -16,7 +16,7 @@ const createAlbum = async (req, res) => {
       releaseDate: req.body.releaseDate,
       genre: req.body.genre,
       images: req.optimizedImages.map(img => ({
-        path: img.path
+        path: img.url
       }))
     };
     const album = await albumService.createAlbum(albumData);
@@ -55,6 +55,14 @@ const getAlbumById = async (req, res) => {
 
       return res.status(404).json({ error: 'Album not found.' });
     }
+    const albumResponse = {
+      title: album.title,
+      coverImageUrl: album.images.length > 0 ? album.images[0].path : null, // URL CloudFront
+      artistId: album.artistId,
+      releaseDate: album.releaseDate,
+      genre: album.genre,
+      duration: album.duration,
+    };
     logger.info(`Album with ID ${req.params.id} retrieved successfully.`);
 
     res.status(200).json(album);
