@@ -17,7 +17,7 @@ const { scheduleTemporaryFileCleanup } = require('./services/cleanService.js');
 
 const router = require('./routes/index.js');
 const config = require('./config/config.js')[process.env.NODE_ENV || 'development'];
-//const querycacheMiddleware = require('./middlewares/querycache.js');
+const querycacheMiddleware = require('./middlewares/querycache.js');
 const globalRateLimiter = require('./middlewares/rateLimiter.js');
 
 dotenv.config();
@@ -121,6 +121,7 @@ app.use(trackSuccessFailure);
 // Routes
 
 app.use('/api', router);
+app.use(querycacheMiddleware);
 
 const startServer = async () => {
   initializeApp();
