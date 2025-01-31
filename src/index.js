@@ -1,5 +1,6 @@
 const express = require('express');
 const helmet = require('helmet');
+const timeout = require('express-timeout-handler');
 //const csurf = require('csurf');
 //const cookieParser = require('cookie-parser');
 const mongoose = require('mongoose');
@@ -25,13 +26,6 @@ dotenv.config();
 const app = express();
 const port = 8000;
 
-// const redisUrlEx = process.env.REDIS_URL_EX;
-
-// redisClient = new Redis(redisUrlEx);
-
-// redisClient.on('connect', () => console.log('Redis connecté'));
-// redisClient.on('error', (err) => console.error(`Erreur Redis`, err));
-
 app.use(helmet());
 
 app.use(responseTime((req, res, time) => {
@@ -44,8 +38,6 @@ app.use(express.urlencoded({ extended: true })); // Pour parser les données de 
 //const csrfProtection = csurf({ cookie: true });
 //app.use(csrfProtection);
 app.use(globalRateLimiter);
-//app.use(querycacheMiddleware);
-
 
 // Set up CORS options
 const corsOptions = {
@@ -59,20 +51,38 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // Database connection function
-const connectDB = async () => {
+/*const connectDB = async () => {
   try {
     await mongoose.connect(config.uri, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
-      //connectTimeoutMS: 5000, 
-      //socketTimeoutMS: 45000,// timeout pour les req si une req prend plus de 45s elle sera annulee
+      connectTimeoutMS: 5000, 
+      socketTimeoutMS: 45000,// timeout pour les req si une req prend plus de 45s elle sera annulee
     });
     console.log('MongoDB connected successfully');
   } catch (err) {
     console.error('MongoDB connection error:', err);
     process.exit(1);
   }
-};
+};*/
+async function connectWithRetry() {
+  const pRetry = (await import('p-retry')).default; 
+  return pRetry(() => mongoose.connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    connectTimeoutMS: 5000,
+    socketTimeoutMS: 45000,
+  }), {
+    retries: 3,
+    onFailedAttempt: (error) => {
+      console.log(`Tentative ${error.attemptNumber} échouée. Erreur: ${error.message}`);
+    },
+  });
+}
+
+connectWithRetry()
+  .then(() => console.log('Connecté à MongoDB'))
+  .catch(err => console.error('Impossible de se connecter après 3 tentatives.', err));
 mongoose.set('debug', true);//Temps d'exécution des requêtes de base de données
 
 // Application initialization function
@@ -121,6 +131,21 @@ app.use(trackSuccessFailure);
 // Routes
 
 app.use('/api', router);
+app.use(timeout.handler({
+  timeout: 10000, 
+  onTimeout: (req, res) => {
+    res.status(503).json({ error: 'Requête expirée, veuillez réessayer plus tard.' });
+  },
+  disable: ['write', 'setHeaders'], // Empêche de modifier les headers après timeout
+}));
+app.use((err, req, res, next) => {
+  if (err.code === 'ETIMEDOUT') {
+    return res.status(504).json({ error: 'Timeout serveur, veuillez réessayer plus tard.' });
+  }
+  console.error(err);
+  res.status(500).json({ error: 'Erreur interne du serveur' });
+});
+
 app.use(querycacheMiddleware);
 
 const startServer = async () => {
