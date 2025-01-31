@@ -21,7 +21,7 @@ router.post('/:artistId', upload.single('image'), imageUploadMiddleware, albumCo
 
 
 // Route pour obtenir tous les albums avec pagination
-router.get('/', albumController.getAllAlbum);
+router.get('/',albumController.getAllAlbum);
 
 // Route pour obtenir un album spécifique par ID
 router.get('/:id', albumController.getAlbumById);

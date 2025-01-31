@@ -4,9 +4,6 @@ const mongoose = require('mongoose');
 const User = require('../models/user')(mongoose);
 
 const loginUser = async (email, password) => {
-  console.log('loginUser invoked');
-  console.log('Email:', email);
-  console.log('Password:', password);
   try {
     // console.log('JWT_SECRET:', process.env.JWT_SECRET);
     const user = await User.findOne({ email });

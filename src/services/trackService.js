@@ -85,7 +85,8 @@ const createTrack = async (data) => {
     // Rest of the method remains the same...
     const trackPayload = {
       ...value,
-      audioLink: fileName
+      //audioLink: fileName
+      audioLink: azureFileUrl
     };
 
     const track = await Track.create(trackPayload);

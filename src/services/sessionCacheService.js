@@ -1,20 +1,29 @@
 const redisClient = require('../config/redis');
+
 const setSession = async (token, sessionData, expiration = 3600) => {
   const redisKey = `user_session:${token}`;
+  console.log(`Setting session for token: ${token} with data:`, sessionData);
   await redisClient.set(redisKey, JSON.stringify(sessionData), 'EX', expiration);
 };
+
 const getSession = async (token) => {
   const redisKey = `user_session:${token}`;
   const session = await redisClient.get(redisKey);
+  console.log(`Fetching session for token: ${token}, Found:`, session);
+  console.log('lol');
   return session ? JSON.parse(session) : null;
 };
+
 const deleteSession = async (token) => {
   const redisKey = `user_session:${token}`;
+  console.log(`Deleting session for token: ${token}`);
   return await redisClient.del(redisKey);
 };
+
 const sessionExists = async (token) => {
   const redisKey = `user_session:${token}`;
   const exists = await redisClient.exists(redisKey);
+  console.log(`Checking if session exists for token: ${token}, Exists: ${exists === 1}`);
   return exists === 1;
 };
 
