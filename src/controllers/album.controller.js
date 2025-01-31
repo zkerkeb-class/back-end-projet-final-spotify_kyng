@@ -216,6 +216,21 @@ const getTop10RecentAlbums = async (req, res) => {
   }
 };
 
+const searchAlbums = async (req, res) => {
+  try {
+    const { title, artistName, genre, releaseYear, page, limit } = req.query;
+    const filters = { title, artistName, genre, releaseYear };
+    
+    const result = await albumService.searchAlbums(filters, Number(page), Number(limit));
+
+    logger.info(`Results found for this research : ${result}.`);
+    return res.status(200).json(result);
+  } catch (error) {
+    logger.error(`Error in controller: ${error.message}`);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
 module.exports = {
   createAlbum,
   getAllAlbum,
@@ -226,5 +241,6 @@ module.exports = {
   getAlbumsByGenre,
   getAlbumsByYearController,
   getAlbumByTitle,
-  getTop10RecentAlbums
+  getTop10RecentAlbums,
+  searchAlbums
 };

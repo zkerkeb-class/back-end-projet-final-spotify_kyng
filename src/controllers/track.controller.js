@@ -31,6 +31,11 @@ const createTrack = async (req, res) => {
     }
 
     // Prepare track data with Faker-generated fallbacks
+    // let albumId = req.params.albumId;
+    // if (albumId && mongoose.Types.ObjectId.isValid(albumId)) {
+    //   albumId = new Types.ObjectId(albumId);
+    // }
+
     const trackData = {
       title: req.body.title || metadata.title,
       duration: req.body.duration || metadata.duration,
@@ -270,6 +275,56 @@ const getTop10TracksByReleaseDate = async (req, res) => {
   }
 };
 
+const advancedFilter = async (req, res) => {
+  try {
+    const {
+      artist = '',
+      album = '',
+      genre = '',
+      yearStart = '',
+      yearEnd = '',
+      durationMin = '',
+      durationMax = '',
+      popularity = '',
+      playlist = '',
+      sorts = '',
+      page = 1,
+      limit = 10
+    } = req.query;
+
+    const filters = {};
+
+    if (artist) filters.artist = artist.split(',');
+    if (album) filters.album = album.split(',');
+    if (genre) filters.genre = genre.split(',');
+    if (yearStart && yearEnd) filters.year = { start: yearStart, end: yearEnd };
+    if (durationMin && durationMax) filters.duration = { min: durationMin, max: durationMax };
+    if (popularity) filters.popularity = popularity;
+    if (playlist) filters.playlist = playlist;
+
+    const sortArray = sorts ? JSON.parse(sorts) : [];
+
+    const result = await trackService.advancedFilter(
+      filters,
+      sortArray,
+      parseInt(page),
+      parseInt(limit)
+    );
+    logger.info(result.message);
+
+    return res.status(200).json(result);
+  } catch (error) {
+    logger.error(`Error in advanced filter : ${result.message}`);
+    return res.status(500).json({ message: 'Error fetching filtered tracks', error: error.message });
+  }
+};
+
+
+
+
+
+
+
 
 module.exports = {
   createTrack,
@@ -283,5 +338,6 @@ module.exports = {
   getTracksByYear,
   streamTrack,
   getTrackByTitle,
-  getTop10TracksByReleaseDate
+  getTop10TracksByReleaseDate,
+  advancedFilter
 };
