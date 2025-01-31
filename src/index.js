@@ -17,7 +17,7 @@ const { scheduleTemporaryFileCleanup } = require('./services/cleanService.js');
 
 const router = require('./routes/index.js');
 const config = require('./config/config.js')[process.env.NODE_ENV || 'development'];
-const querycacheMiddleware = require('./middlewares/querycache.js');
+//const querycacheMiddleware = require('./middlewares/querycache.js');
 const globalRateLimiter = require('./middlewares/rateLimiter.js');
 
 dotenv.config();
@@ -44,7 +44,7 @@ app.use(express.urlencoded({ extended: true })); // Pour parser les données de 
 //const csrfProtection = csurf({ cookie: true });
 //app.use(csrfProtection);
 app.use(globalRateLimiter);
-app.use(querycacheMiddleware);
+//app.use(querycacheMiddleware);
 
 
 // Set up CORS options
@@ -150,5 +150,3 @@ process.on('SIGINT', async () => {
 
 startServer();
 
-
-// module.exports = redisClient;

@@ -1,5 +1,5 @@
 const express = require('express');
-const { measureResponseTime,getServerMetrics, trackBandwidth, trackSuccessFailure, resetMetrics } = require('../services/monitoringService');
+const { getServerMetrics, trackBandwidth, trackSuccessFailure, resetMetrics, measureResponseTime } = require('../services/monitoringService');
 
 const router = express.Router();
 
@@ -14,12 +14,11 @@ router.use(trackSuccessFailure);
 
 // Route pour récupérer les métriques
 router.get('/', (req, res) => {
-  //await measureRedisLatency();
   const metrics = getServerMetrics();
 
   // Ajouter le temps de réponse
-  //metrics.responseTime = req.responseTime || 0;
-  console.log(`Temps de réponse dans la route /metrics : ${metrics.responseTime} ms`);
+  metrics.responseTime = req.responseTime || 0;
+
   // Envoyer la réponse
   res.json(metrics);
 });
