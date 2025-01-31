@@ -310,7 +310,7 @@ const advancedFilter = async (req, res) => {
       parseInt(page),
       parseInt(limit)
     );
-    logger.info(result.message);
+    logger.info(`Filtered successfully.`);
 
     return res.status(200).json(result);
   } catch (error) {

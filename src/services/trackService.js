@@ -498,6 +498,12 @@ const advancedFilter = async (filters, sorts, page, limit) => {
       };
     });
 
+    logger.info(`Successfully fetched ${results.length} tracks based on the applied filters.`, {
+      filters: filters,
+      totalResults: results.length,
+      reasons: reasons,
+    });
+    
     return {
       status: 200,
       data: reasons,
