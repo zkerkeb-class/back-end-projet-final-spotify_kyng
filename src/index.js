@@ -75,7 +75,7 @@ app.use(cors(corsOptions));
   }
 };*/
 async function connectWithRetry() {
-  const pRetry = (await import('p-retry')).default; 
+  const pRetry = (await import('p-retry')).default;
   return pRetry(() => mongoose.connect(process.env.MONGO_URI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
@@ -89,16 +89,15 @@ async function connectWithRetry() {
   });
 }
 
-connectWithRetry()
-  .then(() => console.log('Connecté à MongoDB'))
-  .catch(err => console.error('Impossible de se connecter après 3 tentatives.', err));
-mongoose.set('debug', true);//Temps d'exécution des requêtes de base de données
-
 // Application initialization function
 const initializeApp = async () => {
   try {
     // Step 1: Connect to the database
-    await connectDB();
+    //await connectDB();
+    await connectWithRetry()
+      .then(() => console.log('Connecté à MongoDB'))
+      .catch(err => console.error('Impossible de se connecter après 3 tentatives.', err));
+    mongoose.set('debug', true);//Temps d'exécution des requêtes de base de données
 
     // Step 2: Configure and start the backup service
     // const backupConfig = {
@@ -146,7 +145,7 @@ app.get('/api/response-time', (req, res) => {
 
 app.use('/api', router);
 app.use(timeout.handler({
-  timeout: 10000, 
+  timeout: 10000,
   onTimeout: (req, res) => {
     res.status(503).json({ error: 'Requête expirée, veuillez réessayer plus tard.' });
   },
@@ -168,7 +167,7 @@ const startServer = async () => {
 
   // redisClient = await connectRedis(redisUrlEx);
 
-  
+
 
   // Start Express server
   app.listen(port, () => {
