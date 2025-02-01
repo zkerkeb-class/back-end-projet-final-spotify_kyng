@@ -44,10 +44,10 @@ const getRoomState = async (req, res) => {
 // 📌 Inviter un utilisateur à rejoindre la salle via un lien
 const inviteToRoom = async (req, res) => {
   try {
-    const { inviteUrl, userId } = req.body; // inviteUrl est l'URL d'invitation, userId est l'ID de l'utilisateur
-    logger.info(`Tentative d’inviter l’utilisateur ${userId} à rejoindre la salle via l’URL ${inviteUrl}`);
+    const { roomId, userId } = req.params; // inviteUrl est l'URL d'invitation, userId est l'ID de l'utilisateur
+    logger.info(`Tentative d’inviter l’utilisateur ${userId} à rejoindre la salle via ${roomId}`);
 
-    const result = await roomService.inviteToRoom(inviteUrl, userId);
+    const result = await roomService.inviteToRoom(roomId, userId);
     res.status(200).json(result);
   } catch (error) {
     logger.error(`Erreur lors de l’invitation de l’utilisateur ${userId} à rejoindre la salle: ${error.message}`);

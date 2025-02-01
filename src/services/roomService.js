@@ -123,10 +123,9 @@ const updatePlaybackState = async (roomId, playing, position) => {
 };
 
 // 📌 Fonction pour inviter un utilisateur à rejoindre une salle via un lien d'invitation
-const inviteToRoom = async (inviteUrl, userId) => {
+const inviteToRoom = async (roomId, userId) => {
   try {
     // Extraire le roomId à partir de l'URL d'invitation
-    const roomId = inviteUrl.split('/').pop(); // Si l'URL est de la forme "/room/{roomId}"
 
     const { error } = roomSchema.validate({ roomId, userId });
     if (error) throw new Error(error.details[0].message);
@@ -144,7 +143,7 @@ const inviteToRoom = async (inviteUrl, userId) => {
 
     return { success: true, roomId, userId };
   } catch (error) {
-    logger.error(`Erreur lors de l’invitation de l’utilisateur ${userId} dans la salle ${inviteUrl}: ${error.message}`);
+    logger.error(`Erreur lors de l’invitation de l’utilisateur ${userId} dans la salle ${roomId}: ${error.message}`);
     throw error;
   }
 };

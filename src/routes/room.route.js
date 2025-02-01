@@ -9,6 +9,6 @@ router.get('/:roomId', RoomController.getRoom);
 
 router.get('/:roomId/state', RoomController.getRoomState);
 
-router.post('/invite', RoomController.inviteToRoom);
+router.get('/invite/:roomId/:userId', RoomController.inviteToRoom);
 
 module.exports = router;
