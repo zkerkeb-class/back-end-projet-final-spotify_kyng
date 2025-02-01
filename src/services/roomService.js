@@ -122,6 +122,33 @@ const updatePlaybackState = async (roomId, playing, position) => {
   }
 };
 
+// 📌 Fonction pour inviter un utilisateur à rejoindre une salle via un lien d'invitation
+const inviteToRoom = async (inviteUrl, userId) => {
+  try {
+    // Extraire le roomId à partir de l'URL d'invitation
+    const roomId = inviteUrl.split('/').pop(); // Si l'URL est de la forme "/room/{roomId}"
+
+    const { error } = roomSchema.validate({ roomId, userId });
+    if (error) throw new Error(error.details[0].message);
+
+    // Vérification si la salle existe
+    const roomExists = await redisClient.exists(`room:${roomId}`);
+    if (!roomExists) {
+      logger.warn(`Tentative d’invitation pour une salle inexistante: ${roomId}`);
+      throw new Error('Room not found');
+    }
+
+    // Ajouter l'utilisateur dans la salle
+    await redisClient.sadd(`room:${roomId}:participants`, userId);
+    logger.info(`Utilisateur ${userId} a rejoint la salle ${roomId} via invitation`);
+
+    return { success: true, roomId, userId };
+  } catch (error) {
+    logger.error(`Erreur lors de l’invitation de l’utilisateur ${userId} dans la salle ${inviteUrl}: ${error.message}`);
+    throw error;
+  }
+};
+
 module.exports = {
   createRoom,
   getRoom,
@@ -130,4 +157,5 @@ module.exports = {
   leaveRoom,
   getPlaybackState,
   updatePlaybackState,
+  inviteToRoom
 };
