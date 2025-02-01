@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const sessionCacheService = require('../services/sessionCacheService');
 const User = require('../models/user')(require('mongoose'));
 
-const authMiddleware = async (req, res, next) => {
+/*const authMiddleware = async (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
 
   if (!token) {
@@ -41,6 +41,50 @@ const authMiddleware = async (req, res, next) => {
     return res.status(400).json({ message: 'Invalid token.' });
   }
 };
+*/
+const authMiddleware = async (req, res, next) => {
+  const token = req.headers.authorization?.split(' ')[1];
 
+  if (!token) {
+    console.log("No token provided in the request headers");
+    return res.status(403).json({ message: 'Access denied, no token provided.' });
+  }
+
+  try {
+    // Vérifie si le token est dans la liste noire
+    const isBlacklisted = await sessionCacheService.isTokenBlacklisted(token);
+    if (isBlacklisted) {
+      return res.status(401).json({ message: 'Token invalidated. Please log in again.' });
+    }
+
+    // Vérifie si la session existe dans Redis
+    const cachedSession = await sessionCacheService.getSession(token);
+    console.log("Cached session:", cachedSession);
+
+    if (cachedSession) {
+      req.user = cachedSession; // Ajoute les données utilisateur au `req`
+      console.log("Session found in cache, proceeding to the next middleware");
+      return next();
+    }
+
+    // Si pas dans Redis, vérifie le token JWT
+    console.log("Session not found in cache, verifying JWT");
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    console.log("JWT decoded:", decoded);
+
+    // Assure-toi que le rôle est inclus dans les données de session
+    const sessionData = { id: decoded.id, email: decoded.email, role: decoded.role };
+
+    console.log("Creating new session in cache:", sessionData);
+    await sessionCacheService.setSession(token, sessionData);
+
+    req.user = sessionData; // Ajoute les données utilisateur au `req`
+    next();
+  } catch (err) {
+    console.error("Error in authMiddleware:", err.message);
+    return res.status(400).json({ message: 'Invalid token.' });
+  }
+};
 
 module.exports = authMiddleware;

@@ -17,7 +17,7 @@ const loginController = async (req, res) => {
   }
 };
 
-const logoutController = async (req, res) => {
+/*const logoutController = async (req, res) => {
   const token = req.headers.authorization?.split(' ')[1]; 
 
   if (!token) {
@@ -29,6 +29,26 @@ const logoutController = async (req, res) => {
     if (result === 0) {
       return res.status(400).json({ message: 'Token non trouvé dans le cache.' });
     }
+
+    res.status(200).json({ message: 'Déconnexion réussie.' });
+  } catch (error) {
+    console.error('Erreur lors de la déconnexion:', error.message);
+    res.status(500).json({ message: 'Erreur interne lors de la déconnexion.' });
+  }
+};*/
+const logoutController = async (req, res) => {
+  const token = req.headers.authorization?.split(' ')[1];
+
+  if (!token) {
+    return res.status(400).json({ message: 'Token manquant.' });
+  }
+
+  try {
+    // Ajoute le token à la liste noire dans Redis
+    await sessionCacheService.addToBlacklist(token);
+
+    // Supprime la session associée au token
+    await sessionCacheService.deleteSession(token);
 
     res.status(200).json({ message: 'Déconnexion réussie.' });
   } catch (error) {
