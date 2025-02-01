@@ -3,158 +3,144 @@ const { v4: uuidv4 } = require('uuid');
 const logger = require('../utils/logger');
 const Joi = require('joi');
 
-// Validation des données d'entrée
+// 📌 Validation des données d'entrée
 const roomSchema = Joi.object({
-  roomId: Joi.string().uuid().required(),
-  userId: Joi.string().required(),
+    roomId: Joi.string().uuid().required(),
+    userId: Joi.string().required(),
 });
 
 // 📌 Création d'une salle
 const createRoom = async () => {
-  try {
-    const roomId = uuidv4();
-    const url = process.env.FRONT_URL;
-    const shareUrl = `${url}/room/${roomId}`;
+    try {
+        const roomId = uuidv4();
+        const shareUrl = `${process.env.FRONT_URL}/room/${roomId}`;
 
-    await redisClient.hset(`room:${roomId}`, {
-      id: roomId,
-      shareUrl,
-      createdAt: Date.now(),
-    });
+        await redisClient.hset(`room:${roomId}`, {
+            id: roomId,
+            shareUrl,
+            createdAt: Date.now(),
+        });
 
-    logger.info(`Salle créée avec succès: ${roomId}`);
-    return { id: roomId, shareUrl };
-  } catch (error) {
-    logger.error(`Erreur lors de la création d’une salle: ${error.message}`);
-    throw error;
-  }
+        logger.info(`✅ Salle créée: ${roomId}`);
+        return { id: roomId, shareUrl };
+    } catch (error) {
+        logger.error(`❌ Erreur création salle: ${error.message}`);
+        throw error;
+    }
 };
 
 // 📌 Récupération des informations d'une salle
 const getRoom = async (roomId) => {
-  try {
-    const room = await redisClient.hgetall(`room:${roomId}`);
-    if (!room || !room.id) {
-      logger.warn(`Salle non trouvée: ${roomId}`);
-      throw new Error('Room not found');
+    try {
+        const room = await redisClient.hgetall(`room:${roomId}`);
+        if (!room.id) throw new Error('Room not found');
+        return room;
+    } catch (error) {
+        throw new Error(`Erreur récupération salle: ${error.message}`);
     }
-
-    logger.info(`Salle récupérée: ${roomId}`);
-    return room;
-  } catch (error) {
-    logger.error(`Erreur lors de la récupération de la salle ${roomId}: ${error.message}`);
-    throw error;
-  }
 };
 
 // 📌 Ajout d'un utilisateur dans une salle
 const joinRoom = async (roomId, userId) => {
-  try {
-    const { error } = roomSchema.validate({ roomId, userId });
-    if (error) throw new Error(error.details[0].message);
+    try {
+        const { error } = roomSchema.validate({ roomId, userId });
+        if (error) throw new Error(error.details[0].message);
 
-    const roomExists = await redisClient.exists(`room:${roomId}`);
-    if (!roomExists) {
-      logger.warn(`Tentative de rejoindre une salle inexistante: ${roomId}`);
-      throw new Error('Room not found');
+        await redisClient.sadd(`room:${roomId}:participants`, userId);
+        logger.info(`👤 User ${userId} rejoint salle ${roomId}`);
+    } catch (error) {
+        throw new Error(`Erreur ajout utilisateur: ${error.message}`);
     }
-
-    await redisClient.sadd(`room:${roomId}:participants`, userId);
-    logger.info(`Utilisateur ${userId} a rejoint la salle ${roomId}`);
-  } catch (error) {
-    logger.error(`Erreur lors de l’ajout de l’utilisateur ${userId} dans la salle ${roomId}: ${error.message}`);
-    throw error;
-  }
 };
 
 // 📌 Récupération des participants
 const getParticipants = async (roomId) => {
-  try {
-    const participants = await redisClient.smembers(`room:${roomId}:participants`);
-    logger.info(`Participants de la salle ${roomId} récupérés: ${participants.length} utilisateurs`);
-    return participants;
-  } catch (error) {
-    logger.error(`Erreur lors de la récupération des participants de la salle ${roomId}: ${error.message}`);
-    throw error;
-  }
+    try {
+        return await redisClient.smembers(`room:${roomId}:participants`);
+    } catch (error) {
+        throw new Error(`Erreur récupération participants: ${error.message}`);
+    }
 };
 
 // 📌 Suppression d'un utilisateur d'une salle
 const leaveRoom = async (roomId, userId) => {
-  try {
-    await redisClient.srem(`room:${roomId}:participants`, userId);
-    logger.info(`Utilisateur ${userId} a quitté la salle ${roomId}`);
-  } catch (error) {
-    logger.error(`Erreur lors du départ de l’utilisateur ${userId} de la salle ${roomId}: ${error.message}`);
-    throw error;
-  }
+    try {
+        await redisClient.srem(`room:${roomId}:participants`, userId);
+        logger.info(`❌ User ${userId} quitte salle ${roomId}`);
+    } catch (error) {
+        throw new Error(`Erreur départ utilisateur: ${error.message}`);
+    }
 };
 
-// 📌 Récupération de l'état de lecture d'une salle (lecture/pause + position)
+// 📌 Récupération de l'état de lecture (lecture/pause + position)
 const getPlaybackState = async (roomId) => {
-  try {
-    const state = await redisClient.hgetall(`room:${roomId}:state`);
-    if (!state) {
-      logger.warn(`Aucun état de lecture trouvé pour la salle ${roomId}`);
-      return { playing: false, position: 0 };
+    try {
+        const state = await redisClient.hgetall(`room:${roomId}:state`);
+        return state || { playing: false, position: 0 };
+    } catch (error) {
+        throw new Error(`Erreur récupération état de lecture: ${error.message}`);
     }
-
-    logger.info(`État de lecture récupéré pour la salle ${roomId}: ${JSON.stringify(state)}`);
-    return state;
-  } catch (error) {
-    logger.error(`Erreur lors de la récupération de l’état de lecture de la salle ${roomId}: ${error.message}`);
-    throw error;
-  }
 };
 
 // 📌 Mise à jour de l'état de lecture (play/pause + position)
-const updatePlaybackState = async (roomId, playing, position) => {
-  try {
-    await redisClient.hset(`room:${roomId}:state`, {
-      playing,
-      position,
-    });
+const updatePlaybackState = async (roomId, playing = null, position = null) => {
+    try {
+        const updates = {};
+        if (playing !== null) updates.playing = playing;
+        if (position !== null) updates.position = position;
 
-    logger.info(`État de lecture mis à jour pour la salle ${roomId}: playing=${playing}, position=${position}`);
-  } catch (error) {
-    logger.error(`Erreur lors de la mise à jour de l’état de lecture de la salle ${roomId}: ${error.message}`);
-    throw error;
-  }
+        await redisClient.hset(`room:${roomId}:state`, updates);
+        logger.info(`🎵 État mis à jour salle ${roomId}: ${JSON.stringify(updates)}`);
+    } catch (error) {
+        throw new Error(`Erreur mise à jour état de lecture: ${error.message}`);
+    }
 };
 
-// 📌 Fonction pour inviter un utilisateur à rejoindre une salle via un lien d'invitation
-const inviteToRoom = async (roomId, userId) => {
-  try {
-    // Extraire le roomId à partir de l'URL d'invitation
-
-    const { error } = roomSchema.validate({ roomId, userId });
-    if (error) throw new Error(error.details[0].message);
-
-    // Vérification si la salle existe
-    const roomExists = await redisClient.exists(`room:${roomId}`);
-    if (!roomExists) {
-      logger.warn(`Tentative d’invitation pour une salle inexistante: ${roomId}`);
-      throw new Error('Room not found');
+// 📌 Récupération du morceau en cours
+const getCurrentTrack = async (roomId) => {
+    try {
+        return await redisClient.hget(`room:${roomId}`, 'currentTrack');
+    } catch (error) {
+        throw new Error(`Erreur récupération track: ${error.message}`);
     }
+};
 
-    // Ajouter l'utilisateur dans la salle
-    await redisClient.sadd(`room:${roomId}:participants`, userId);
-    logger.info(`Utilisateur ${userId} a rejoint la salle ${roomId} via invitation`);
+// 📌 Mise à jour du morceau pour tous les participants
+const setCurrentTrack = async (roomId, trackId) => {
+    try {
+        await redisClient.hset(`room:${roomId}`, 'currentTrack', trackId);
+        logger.info(`🔄 Changement de track dans salle ${roomId}: ${trackId}`);
+        return { trackId };
+    } catch (error) {
+        throw new Error(`Erreur changement track: ${error.message}`);
+    }
+};
 
-    return { success: true, roomId, userId };
-  } catch (error) {
-    logger.error(`Erreur lors de l’invitation de l’utilisateur ${userId} dans la salle ${roomId}: ${error.message}`);
-    throw error;
-  }
+// 📌 Invitation via lien
+const inviteToRoom = async (roomId, userId) => {
+    try {
+        const { error } = roomSchema.validate({ roomId, userId });
+        if (error) throw new Error(error.details[0].message);
+
+        const roomExists = await redisClient.exists(`room:${roomId}`);
+        if (!roomExists) throw new Error('Room not found');
+
+        await redisClient.sadd(`room:${roomId}:participants`, userId);
+        return { success: true, roomId, userId };
+    } catch (error) {
+        throw new Error(`Erreur invitation: ${error.message}`);
+    }
 };
 
 module.exports = {
-  createRoom,
-  getRoom,
-  joinRoom,
-  getParticipants,
-  leaveRoom,
-  getPlaybackState,
-  updatePlaybackState,
-  inviteToRoom
+    createRoom,
+    getRoom,
+    joinRoom,
+    getParticipants,
+    leaveRoom,
+    getPlaybackState,
+    updatePlaybackState,
+    getCurrentTrack,
+    setCurrentTrack,
+    inviteToRoom,
 };

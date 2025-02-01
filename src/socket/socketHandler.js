@@ -2,84 +2,114 @@ const roomService = require('../services/roomService');
 
 const socketHandler = (io) => {
     io.on('connection', (socket) => {
-        console.log('User connected:', socket.id);
+        console.log('🔗 User connected:', socket.id);
 
-        // Rejoindre une salle (via une invitation ou manuellement)
+        // 📌 Un utilisateur rejoint une salle
         socket.on('join-room', async (roomId, userId) => {
             try {
-                // Vérifier l'existence de la salle et ajouter l'utilisateur comme participant
                 await roomService.getRoom(roomId);
                 await roomService.joinRoom(roomId, userId);
                 socket.join(roomId);
+                socket.userId = userId; // 🔥 Stocker l'ID utilisateur
 
-                // Récupérer l’état actuel de lecture et les participants
                 const state = await roomService.getPlaybackState(roomId);
                 const participants = await roomService.getParticipants(roomId);
+                const currentTrack = await roomService.getCurrentTrack(roomId);
 
-                // Envoyer l'état de la salle et la liste des participants à l'utilisateur
-                socket.emit('room-state', { state, participants });
-                io.to(roomId).emit('user-joined', userId);
+                socket.emit('room-state', { state, participants, currentTrack });
+                io.to(roomId).emit('user-joined', { userId, participants });
 
-                console.log(`User ${userId} joined room ${roomId}`);
+                console.log(`✅ User ${userId} joined room ${roomId}`);
             } catch (error) {
                 socket.emit('error', { message: error.message });
             }
         });
 
-        // Rejoindre une salle via un lien d'invitation
-        socket.on('invite-to-room', async (inviteUrl, userId) => {
-            try {
-                // Traiter l'invitation et ajouter l'utilisateur
-                const result = await roomService.inviteToRoom(inviteUrl, userId);
-                const { roomId } = result;
-
-                // Ajouter l'utilisateur à la salle et récupérer les informations nécessaires
-                socket.join(roomId);
-                const state = await roomService.getPlaybackState(roomId);
-                const participants = await roomService.getParticipants(roomId);
-
-                // Envoyer l'état de la salle et la liste des participants à l'utilisateur
-                socket.emit('room-state', { state, participants });
-                io.to(roomId).emit('user-joined', userId);
-
-                console.log(`User ${userId} joined room ${roomId} via invitation`);
-            } catch (error) {
-                socket.emit('error', { message: error.message });
-            }
-        });
-
-        // Contrôler l'état de lecture (play)
-        socket.on('play', async (roomId) => {
-            await roomService.setPlaybackState(roomId, { play_state: 'playing' });
-            io.to(roomId).emit('play');
-        });
-
-        // Contrôler l'état de lecture (pause)
-        socket.on('pause', async (roomId) => {
-            await roomService.setPlaybackState(roomId, { play_state: 'paused' });
-            io.to(roomId).emit('pause');
-        });
-
-        // Déplacer la position de lecture
-        socket.on('seek', async (roomId, position) => {
-            await roomService.setPlaybackState(roomId, { position });
-            io.to(roomId).emit('seek', position);
-        });
-
-        // Quitter la salle
+        // 📌 Un utilisateur quitte une salle
         socket.on('leave-room', async (roomId, userId) => {
             try {
                 await roomService.leaveRoom(roomId, userId);
                 socket.leave(roomId);
-                io.to(roomId).emit('user-left', userId);
+
+                const participants = await roomService.getParticipants(roomId);
+                io.to(roomId).emit('user-left', { userId, participants });
+
+                // 🔥 Si dernier utilisateur, supprimer la salle
+                if (participants.length === 0) {
+                    await roomService.deleteRoom(roomId);
+                    console.log(`🚮 Room ${roomId} deleted (no more participants)`);
+                }
+
+                console.log(`❌ User ${userId} left room ${roomId}`);
             } catch (error) {
                 socket.emit('error', { message: error.message });
             }
         });
 
-        // Lorsqu'un utilisateur se déconnecte
-        socket.on('disconnect', () => {
-            console.log('User disconnected:', socket.id);
+        // 📌 Jouer la musique
+        socket.on('play', async (roomId) => {
+            try {
+                await roomService.updatePlaybackState(roomId, true);
+                io.to(roomId).emit('play');
+                console.log(`▶️ Play triggered in room ${roomId}`);
+            } catch (error) {
+                socket.emit('error', { message: error.message });
+            }
+        });
+
+        // 📌 Pause de la musique
+        socket.on('pause', async (roomId) => {
+            try {
+                await roomService.updatePlaybackState(roomId, false);
+                io.to(roomId).emit('pause');
+                console.log(`⏸️ Pause triggered in room ${roomId}`);
+            } catch (error) {
+                socket.emit('error', { message: error.message });
+            }
+        });
+
+        // 📌 Changer la position de la lecture
+        socket.on('seek', async (roomId, position) => {
+            try {
+                await roomService.updatePlaybackState(roomId, null, position);
+                io.to(roomId).emit('seek', position);
+                console.log(`⏩ Seek to ${position}s in room ${roomId}`);
+            } catch (error) {
+                socket.emit('error', { message: error.message });
+            }
+        });
+
+        // 📌 Changer la musique pour tous les participants
+        socket.on('change-track', async (roomId, trackId) => {
+            try {
+                await roomService.setCurrentTrack(roomId, trackId);
+                io.to(roomId).emit('track-changed', { trackId });
+                console.log(`🎵 Track changed in room ${roomId} -> ${trackId}`);
+            } catch (error) {
+                socket.emit('error', { message: error.message });
+            }
+        });
+
+        // 📌 Gestion de la déconnexion propre
+        socket.on('disconnecting', async () => {
+            const rooms = Array.from(socket.rooms).slice(1); // Ignorer `socket.id`
+            for (const roomId of rooms) {
+                try {
+                    const userId = socket.userId || socket.id; // 🔥 Récupérer userId
+                    await roomService.leaveRoom(roomId, userId);
+                    const participants = await roomService.getParticipants(roomId);
+                    io.to(roomId).emit('user-left', { userId, participants });
+
+                    // 🔥 Supprimer la salle si plus personne
+                    if (participants.length === 0) {
+                        await roomService.deleteRoom(roomId);
+                        console.log(`🚮 Room ${roomId} deleted (empty)`);
+                    }
+                } catch (error) {
+                    console.error(`Erreur lors de la déconnexion: ${error.message}`);
+                }
+            }
+            console.log(`🔌 User ${socket.id} disconnected`);
         });
     });
 };
