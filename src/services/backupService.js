@@ -1,131 +1,231 @@
-const { exec } = require('child_process');
-const fs = require('fs').promises;
+const { MongoClient } = require('mongodb');
 const path = require('path');
-// const AWS = require('aws-sdk');
+const fs = require('fs');
+const { DateTime } = require('luxon');
 const axios = require('axios');
-const cron = require('node-cron');
-const logger = require('../utils/logger');
-
-// AWS S3 Setup
-// const s3 = new AWS.S3({
-//   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-//   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-// });
+const { BlobServiceClient } = require('@azure/storage-blob');
+const tar = require('tar');
+const os = require('os');
+const { v4: uuidv4 } = require('uuid');
+const schedule = require('node-schedule');
 
 /**
- * Perform a database backup
- * @param {Object} config - Backup configuration
+ * Sauvegarde la base de données MongoDB
+ * @returns {Promise<string>} - Chemin du dossier de sauvegarde temporaire
  */
-async function performBackup(config) {
-  const { backupDir, s3Bucket, dbName, notificationUrl } = config;
+const backupDatabase = async () => {
+  const date = DateTime.now().toFormat('yyyy-MM-dd_HH-mm-ss');
+  const backupName = `backup_${date}`;
+  const backupPath = path.join(os.tmpdir(), uuidv4(), backupName); // Use a temporary directory
+
+  // Create the backup folder
+  fs.mkdirSync(backupPath, { recursive: true });
+
+  const client = new MongoClient(process.env.MONGO_URI, { useUnifiedTopology: true });
 
   try {
-    // Step 1: Create backup directory
-    await fs.mkdir(backupDir, { recursive: true });
+    await client.connect();
+    console.log('Connected to MongoDB');
 
-    // Step 2: Create backup filename with timestamp
-    const timestamp = new Date().toISOString().replace(/:/g, '-');
-    const backupFilename = `backup_${timestamp}.gz`;
-    const backupPath = path.join(backupDir, backupFilename);
+    const db = client.db(); // Get the default database
+    const collections = await db.listCollections().toArray();
 
-    // Step 3: Run the MongoDB dump command to create the backup file
-    const mongoDumpCommand = `mongodump --db=${dbName} --archive=${backupPath} --gzip`;
+    // Export each collection to a JSON file
+    for (const collectionInfo of collections) {
+      const collectionName = collectionInfo.name;
+      const collection = db.collection(collectionName);
+      const documents = await collection.find({}).toArray();
 
-    exec(mongoDumpCommand, async (error) => {
-      if (error) {
-        logger.error(`Backup failed: ${error}`);
-        await sendNotification(notificationUrl, `Backup failed: ${error}`);
-        return;
-      }
+      const filePath = path.join(backupPath, `${collectionName}.json`);
+      fs.writeFileSync(filePath, JSON.stringify(documents, null, 2));
 
-      // Step 4: Upload backup file to S3
-      await uploadToS3(backupPath, backupFilename, s3Bucket);
+      console.log(`Exported collection ${collectionName} to ${filePath}`);
+    }
 
-      // Step 5: Clean up old backups (delete backups older than 7 days)
-      await manageBackupRetention(backupDir);
+    console.log('Sauvegarde réussie');
+    return backupPath;
+  } catch (err) {
+    console.error('Erreur lors de la sauvegarde:', err);
+    throw err;
+  } finally {
+    await client.close();
+  }
+};
 
-      logger.info(`Backup created and uploaded to S3: ${backupFilename}`);
+/**
+ * Compresse le dossier de sauvegarde
+ * @param {string} backupPath - Chemin du dossier de sauvegarde
+ * @returns {Promise<string>} - Chemin du fichier compressé temporaire
+ */
+const compressBackup = async (backupPath) => {
+  const backupName = path.basename(backupPath);
+  const tarPath = path.join(os.tmpdir(), `${backupName}.tar.gz`);
+
+  await tar.c(
+    {
+      gzip: true,
+      file: tarPath,
+      cwd: path.dirname(backupPath),
+    },
+    [backupName]
+  );
+
+  return tarPath;
+};
+
+/**
+ * Envoie une notification à un topic ntfy.sh
+ * @param {string} topic - Le topic ntfy (ex: "mon_topic")
+ * @param {string} message - Le message à envoyer
+ */
+const sendNotification = async (topic, message) => {
+
+  try {
+    await axios.post(topic, message, {
+      headers: {
+        'Title': 'Sauvegarde MongoDB', // Titre de la notification
+        'Priority': 'default',        // Priorité (default, high, urgent, etc.)
+      },
     });
+    console.log('Notification envoyée avec succès à ntfy.sh');
   } catch (error) {
-    logger.error(`Error during backup: ${error}`);
-    await sendNotification(notificationUrl, `Error during backup: ${error}`);
+    console.error('Erreur lors de l\'envoi de la notification à ntfy.sh:', error);
   }
-}
+};
 
 /**
- * Upload a file to S3
- * @param {string} filePath - Local path of the file
- * @param {string} filename - Name of the file
- * @param {string} bucket - S3 bucket name
+ * Upload le fichier compressé vers Azure Blob Storage
+ * @param {string} tarPath - Chemin du fichier compressé
  */
-async function uploadToS3(filename) {
+const uploadToAzure = async (tarPath) => {
   try {
-    // const fileContent = await fs.readFile(filePath);
+    const blobServiceClient = BlobServiceClient.fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING);
+    const containerClient = blobServiceClient.getContainerClient(process.env.AZURE_CONTAINER_NAME_BACKUP);
+    const blobName = path.basename(tarPath);
+    const blockBlobClient = containerClient.getBlockBlobClient(blobName);
 
-    // const params = {
-    //   Bucket: bucket,
-    //   Key: `database-backups/${filename}`,
-    //   Body: fileContent,
-    // };
+    await blockBlobClient.uploadFile(tarPath);
+    console.log(`Sauvegarde uploadée sur Azure Blob Storage: ${blobName}`);
 
-    // await s3.upload(params).promise();
-    logger.info(`Backup uploaded to S3: ${filename}`);
+    // Delete the local tar file after upload
+    fs.unlinkSync(tarPath);
+    console.log(`Fichier local supprimé: ${tarPath}`);
   } catch (error) {
-    logger.error(`S3 upload failed: ${error}`);
+    console.error('Erreur lors de l\'upload sur Azure:', error);
+    throw error;
   }
-}
+};
 
 /**
- * Manage backup retention
- * @param {string} backupDir - Backup directory
+ * Nettoie les sauvegardes sur Azure Blob Storage en fonction de la politique de rotation
  */
-async function manageBackupRetention(backupDir) {
+const cleanupOldBackupsOnAzure = async () => {
   try {
-    const files = await fs.readdir(backupDir);
+    const blobServiceClient = BlobServiceClient.fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING);
+    const containerClient = blobServiceClient.getContainerClient(process.env.AZURE_CONTAINER_NAME_BACKUP);
 
-    for (const file of files) {
-      const filePath = path.join(backupDir, file);
-      const stats = await fs.stat(filePath);
+    // Lister tous les blobs dans le conteneur
+    const blobs = [];
+    for await (const blob of containerClient.listBlobsFlat()) {
+      const blobClient = containerClient.getBlobClient(blob.name);
+      const properties = await blobClient.getProperties();
+      blobs.push({
+        name: blob.name,
+        createdOn: properties.createdOn,
+      });
+    }
 
-      // If the file is older than 7 days, delete it
-      if (Date.now() - stats.mtime.getTime() > 7 * 24 * 60 * 60 * 1000) {
-        await fs.unlink(filePath);
-        logger.info(`Deleted old backup file: ${file}`);
+    // Trier les blobs par date de création (du plus récent au plus ancien)
+    blobs.sort((a, b) => b.createdOn - a.createdOn);
+
+    // Filtrer les sauvegardes à conserver
+    const now = new Date();
+    const dailyBackups = [];
+    const weeklyBackups = [];
+
+    for (const blob of blobs) {
+      const blobCreationTime = blob.createdOn;
+      const ageInDays = (now - blobCreationTime) / (1000 * 60 * 60 * 24); // Âge en jours
+
+      if (ageInDays <= 7) {
+        // Conserver les sauvegardes des 7 derniers jours
+        dailyBackups.push(blob);
+      } else if (ageInDays <= 30) {
+        // Conserver une sauvegarde par semaine pour le mois précédent
+        const weekStart = new Date(blobCreationTime);
+        weekStart.setHours(0, 0, 0, 0);
+        weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // Début de la semaine (dimanche)
+
+        // Vérifier si une sauvegarde de cette semaine a déjà été conservée
+        const existingWeeklyBackup = weeklyBackups.find(
+          (b) => b.weekStart.getTime() === weekStart.getTime()
+        );
+
+        if (!existingWeeklyBackup) {
+          weeklyBackups.push({
+            weekStart,
+            blob,
+          });
+        }
       }
     }
+
+    // Supprimer les sauvegardes qui ne correspondent pas à la politique de rotation
+    for (const blob of blobs) {
+      const isDailyBackup = dailyBackups.some((b) => b.name === blob.name);
+      const isWeeklyBackup = weeklyBackups.some((b) => b.blob.name === blob.name);
+
+      if (!isDailyBackup && !isWeeklyBackup) {
+        const blobClient = containerClient.getBlobClient(blob.name);
+        await blobClient.delete();
+        console.log(`Sauvegarde supprimée sur Azure: ${blob.name}`);
+      }
+    }
+
+    console.log('Nettoyage des sauvegardes sur Azure terminé avec succès.');
   } catch (error) {
-    logger.error(`Error managing backup retention: ${error}`);
+    console.error('Erreur lors du nettoyage des sauvegardes sur Azure:', error);
+    throw error;
   }
-}
-
-/**
- * Send a notification
- * @param {string} notificationUrl - URL for notifications
- * @param {string} message - Notification message
- */
-async function sendNotification(notificationUrl, message) {
-  try {
-    await axios.post(notificationUrl, {
-      topic: 'backup-alerts',
-      message: message,
-      priority: 4,
-    });
-  } catch (error) {
-    logger.error(`Notification failed: ${error}`);
-  }
-}
-
-/**
- * Schedule backups (every midnight)
- * @param {Object} config - Backup configuration
- */
-function scheduleBackup(config) {
-  cron.schedule('0 0 * * *', async () => {
-    await performBackup(config);
-  });
-}
-
-module.exports = {
-  performBackup,
-  scheduleBackup,
 };
+
+/**
+ * Exécute le processus complet de sauvegarde
+ * @param {object} config - Configuration de la sauvegarde
+ */
+const runBackup = async (config) => {
+  const { notificationUrl } = config;
+
+  try {
+    // Étape 1 : Sauvegarder la base de données
+    const backupPath = await backupDatabase();
+
+    // Étape 2 : Compresser la sauvegarde
+    const tarPath = await compressBackup(backupPath);
+
+    // Étape 3 : Uploader sur Azure Blob Storage
+    await uploadToAzure(tarPath);
+
+    // Étape 4 : Supprimer le dossier de sauvegarde temporaire
+    fs.rmdirSync(path.dirname(backupPath), { recursive: true });
+    console.log(`Dossier de sauvegarde temporaire supprimé: ${path.dirname(backupPath)}`);
+
+    // Étape 5 : Appliquer la politique de rotation des sauvegardes
+    await cleanupOldBackupsOnAzure();
+
+    console.log('eeee : ', notificationUrl);
+    // Étape 6 : Envoyer une notification de succès via ntfy.sh
+    if (notificationUrl) {
+      await sendNotification(notificationUrl, 'Sauvegarde réussie ✅');
+    }
+  } catch (error) {
+    console.error('Erreur lors de la sauvegarde:', error);
+
+    // Étape 7 : Envoyer une notification d'échec via ntfy.sh
+    if (notificationUrl) {
+      await sendNotification(notificationUrl, `Échec de la sauvegarde ❌: ${error.message}`);
+    }
+  }
+};
+
+module.exports = { runBackup, cleanupOldBackupsOnAzure };

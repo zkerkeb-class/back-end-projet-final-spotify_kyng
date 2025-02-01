@@ -11,6 +11,7 @@ const dotenv = require('dotenv');
 //const dns = require('dns').promises; 
 const cors = require('cors');
 require('dotenv').config({ path: '../.env.dev' });
+const schedule = require('node-schedule');
 
 const path = require('path');
 // const scheduleBackup = require('./services/backupService.js');
@@ -20,6 +21,8 @@ const router = require('./routes/index.js');
 const config = require('./config/config.js')[process.env.NODE_ENV || 'development'];
 const querycacheMiddleware = require('./middlewares/querycache.js');
 const globalRateLimiter = require('./middlewares/rateLimiter.js');
+const logger = require('./utils/logger.js');
+const { runBackup, cleanupOldBackupsOnAzure } = require('./services/backupService.js');
 
 dotenv.config();
 
@@ -89,33 +92,46 @@ async function connectWithRetry() {
   });
 }
 
+// Configuration de la sauvegarde
+const backupConfig = {
+  containerName: process.env.AZURE_CONTAINER_NAME_BACKUP, // Nom du conteneur Azure
+  notificationUrl: process.env.NOTIFICATION_URL, // URL de notification (ntfy.sh)
+};
+
+
+
+
 // Application initialization function
 const initializeApp = async () => {
   try {
     // Step 1: Connect to the database
-    //await connectDB();
     await connectWithRetry()
       .then(() => console.log('Connecté à MongoDB'))
       .catch(err => console.error('Impossible de se connecter après 3 tentatives.', err));
-    mongoose.set('debug', true);//Temps d'exécution des requêtes de base de données
+    mongoose.set('debug', true); // Temps d'exécution des requêtes de base de données
 
-    // Step 2: Configure and start the backup service
-    // const backupConfig = {
-    //   backupDir: path.join(__dirname, 'backups'),
-    //   s3Bucket: process.env.S3_BUCKET_NAME,
-    //   dbName: process.env.DB_NAME,
-    //   notificationUrl: process.env.NOTIFICATION_URL,
-    // };
+    // Step 2: Schedule the backup process to run daily at midnight
+    schedule.scheduleJob('0 0 * * *', () => {
+      console.log('Démarrage de la sauvegarde automatisée...');
+      runBackup(backupConfig)
+        .then(() => console.log('Sauvegarde terminée avec succès.'))
+        .catch((err) => console.error('Erreur lors de la sauvegarde:', err));
+    });
 
-    // const backupService = new BackupService(backupConfig);
-    // backupService.scheduleBackup(); // Schedule backups to run periodically
+    // Step 3: Schedule the cleanup process for Azure backups
+    schedule.scheduleJob('0 0 * * *', async () => {
+      console.log('Démarrage du nettoyage des sauvegardes sur Azure...');
+      try {
+        await cleanupOldBackupsOnAzure();
+        console.log('Nettoyage des sauvegardes sur Azure terminé avec succès.');
+      } catch (error) {
+        console.error('Erreur lors du nettoyage des sauvegardes sur Azure:', error);
+      }
+    });
 
-    // scheduleBackup(backupConfig);
-    scheduleTemporaryFileCleanup(path.join(__dirname, 'temp'), 7);
-
-    console.log('Application initialized successfully');
+    logger.info('Application initialisée avec succès');
   } catch (error) {
-    console.error('Initialization failed:', error);
+    logger.error('Initialization failed:', error);
   }
 };
 
