@@ -7,7 +7,7 @@ const { v4: uuidv4 } = require('uuid');
 
 // Config Azure Blob Storage
 const AZURE_STORAGE_CONNECTION_STRING = process.env.AZURE_STORAGE_CONNECTION_STRING;
-const AZURE_SAS_TOKEN = process.env.AZURE_STORAGE_SAS_TOKEN;
+const AZURE_SAS_TOKEN_IMAGE = process.env.AZURE_STORAGE_SAS_TOKEN_IMAGE;
 const CONTAINER_NAME = 'spotify-image';
 const CLOUDFRONT_URL = process.env.CLOUDFRONT_URL;
 
@@ -36,7 +36,7 @@ const imageUploadMiddleware = async (req, res, next) => {
     console.log("Image uploaded to Azure Blob Storage:", blobClient.url);
       // Générer l'URL CloudFront (on stocke juste le nom en BDD)
     //const cloudfrontUrl = `https://${CLOUDFRONT_URL}/${fileName}`;
-    const azureBlobUrl = `${blobClient.url}?${AZURE_SAS_TOKEN}`;
+    const azureBlobUrl = `${blobClient.url}?${AZURE_SAS_TOKEN_IMAGE}`;
     const cloudfrontUrl = `https://${CLOUDFRONT_URL}/spotify-image/${fileName}`;
      // Ajouter l'URL à la requête pour la sauvegarde en BDD
      req.imageUrl = {
