@@ -7,9 +7,11 @@ const mongoose = require('mongoose');
 const responseTime = require('response-time');
 const { trackBandwidth, trackSuccessFailure } = require('./services/monitoringService');
 const dotenv = require('dotenv');
+const http = require('http');
 //const Redis = require('ioredis');
 //const dns = require('dns').promises; 
 const cors = require('cors');
+const { Server } = require('socket.io');
 require('dotenv').config({ path: '../.env.dev' });
 
 const path = require('path');
@@ -20,12 +22,13 @@ const router = require('./routes/index.js');
 const config = require('./config/config.js')[process.env.NODE_ENV || 'development'];
 const querycacheMiddleware = require('./middlewares/querycache.js');
 const globalRateLimiter = require('./middlewares/rateLimiter.js');
+const socketHandler = require('./socket/socketHandler.js');
 
 dotenv.config();
 
 const app = express();
 const port = 8000;
-
+const server = http.createServer(app);
 app.use(helmet());
 
 /*app.use(responseTime((req, res, time) => {
@@ -58,6 +61,9 @@ const corsOptions = {
 
 // Enable CORS
 app.use(cors(corsOptions));
+
+const io = new Server(server);
+socketHandler(io);
 
 // Database connection function
 /*const connectDB = async () => {
