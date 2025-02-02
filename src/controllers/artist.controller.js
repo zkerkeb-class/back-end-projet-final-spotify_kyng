@@ -43,7 +43,7 @@ const getAllArtist = async (req, res) => {
   }
 };
 
-const getArtistById = async (req, res) => {
+/* const getArtistById = async (req, res) => {
   try {
     const artist = await artistService.getArtistById(req.params.id);
 
@@ -56,6 +56,44 @@ const getArtistById = async (req, res) => {
       name: artist.name,
       genres: artist.genres,
       imageUrl: artist.images.length > 0 ? `${artist.images[0].path}` : null, 
+    };
+
+    logger.info(`Artist with ID ${req.params.id} retrieved successfully.`);
+    res.status(200).json(artistResponse);
+  } catch (error) {
+    logger.error(`Error in getArtistById: ${error.message}.`);
+    res.status(400).json({ error: error.message });
+  }
+};  */
+const getArtistById = async (req, res) => {
+  try {
+    const artist = await artistService.getArtistById(req.params.id);
+
+    if (!artist) {
+      logger.warn(`Artist with ID ${req.params.id} not found`);
+      return res.status(404).json({ error: 'Artist not found.' });
+    }
+
+    // URLs de l'image
+    const cloudfrontUrl = artist.images.length > 0 
+      ? artist.images[0].path // Utiliser directement l'URL CloudFront
+      : null;
+
+    const filename = artist.images.length > 0 
+      ? artist.images[0].path.split('/').pop() // Extraire le nom du fichier
+      : null;
+
+    const localImageUrl = filename 
+      ? `http://localhost:8000/api/images/image/${encodeURIComponent(filename)}` // Construire l'URL locale
+      : null;
+
+    const artistResponse = {
+      name: artist.name,
+      genres: artist.genres,
+      imageUrls: {
+        cloudfront: cloudfrontUrl, // URL CloudFront
+        local: localImageUrl, // URL locale
+      },
     };
 
     logger.info(`Artist with ID ${req.params.id} retrieved successfully.`);

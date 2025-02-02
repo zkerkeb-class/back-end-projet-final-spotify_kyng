@@ -45,7 +45,7 @@ const getAllAlbum = async (req, res) => {
   }
 };
 
-const getAlbumById = async (req, res) => {
+/*const getAlbumById = async (req, res) => {
   try {
     const album = await albumService.getAlbumById(req.params.id);
 
@@ -56,6 +56,47 @@ const getAlbumById = async (req, res) => {
     const albumResponse = {
       title: album.title,
       coverImageUrl: album.images.length > 0 ? `${album.images[0].path}` : null, 
+      artistId: album.artistId,
+      releaseDate: album.releaseDate,
+      genre: album.genre,
+      duration: album.duration,
+    };
+
+    logger.info(`Album with ID ${req.params.id} retrieved successfully.`);
+    res.status(200).json(albumResponse);
+  } catch (error) {
+    logger.error(`Error in getAlbumById: ${error.message}.`);
+    res.status(400).json({ error: error.message });
+  }
+}; */
+const getAlbumById = async (req, res) => {
+  try {
+    const album = await albumService.getAlbumById(req.params.id);
+
+    if (!album) {
+      logger.warn(`Album with ID ${req.params.id} not found`);
+      return res.status(404).json({ error: 'Album not found.' });
+    }
+
+    // URLs de l'image
+    const cloudfrontUrl = album.images.length > 0 
+      ? album.images[0].path // Utiliser directement l'URL CloudFront
+      : null;
+
+    const filename = album.images.length > 0 
+      ? album.images[0].path.split('/').pop() // Extraire le nom du fichier
+      : null;
+
+    const localImageUrl = filename 
+      ? `http://localhost:8000/api/images/image/${encodeURIComponent(filename)}` // Construire l'URL locale
+      : null;
+
+    const albumResponse = {
+      title: album.title,
+      coverImageUrls: {
+        cloudfront: cloudfrontUrl, // URL CloudFront
+        local: localImageUrl, // URL locale
+      },
       artistId: album.artistId,
       releaseDate: album.releaseDate,
       genre: album.genre,
