@@ -125,19 +125,13 @@ const getTrackByTitle = async (req, res) => {
 const updatedTrack = async (req, res) => {
   try {
     const { id } = req.params;
-
-    // Get the existing track by ID
     const track = await trackService.getTrackById(id);
 
     if (!track) {
       logger.warn(`Track with ID ${id} not found for update.`);
       return res.status(404).json({ error: 'Track not found.' });
     }
-
-    // Only pass the fields that are provided in the request body
     const updatedData = req.body;
-
-    // Pass the existing track and new data to the service for updating
     const updatedTrack = await trackService.updatedTrack(id, updatedData);
 
     logger.info(`Track with ID ${id} updated successfully.`);
@@ -171,7 +165,7 @@ const deleteTrack = async (req, res) => {
 
 const getTracksByArtist = async (req, res) => {
   try {
-    const { artistId } = req.params; // Récupère l'ID de l'artiste
+    const { artistId } = req.params; 
     const { page = 1, limit = 10 } = req.query;
 
     const parsedPage = parseInt(page, 10);
@@ -191,7 +185,7 @@ const getTracksByArtist = async (req, res) => {
 
 const getTracksByAlbum = async (req, res) => {
   try {
-    const { albumId } = req.params; // Récupère l'ID de l'album
+    const { albumId } = req.params; 
     const { page = 1, limit = 10 } = req.query;
 
     const parsedPage = parseInt(page, 10);
@@ -247,15 +241,14 @@ const streamTrack = async (req, res) => {
       return res.status(400).json({ error: 'Filename is required.' });
     }
 
-    // Get a readable stream from Azure Blob Storage
-    const blobStream = await getBlobStream('spotify', filename); // Replace 'spotify' with your container name
+    const blobStream = await getBlobStream('spotify', filename); 
 
     if (!blobStream) {
       return res.status(404).json({ error: 'File not found.' });
     }
 
-    res.setHeader('Content-Type', 'm4a', 'audio/mpeg'); // Set the appropriate MIME type
-    blobStream.pipe(res); // Stream the audio file to the client
+    res.setHeader('Content-Type', 'm4a', 'audio/mpeg'); 
+    blobStream.pipe(res); 
     logger.info(`Streaming file ${filename} successfully.`);
   } catch (error) {
     logger.error(`Error streaming track: ${error.message}`);

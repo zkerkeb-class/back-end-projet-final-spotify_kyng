@@ -1,34 +1,33 @@
 const albumService = require('../services/albumService');
 const logger = require('../utils/logger');
-// const mongoose = require('mongoose');
 
-// const Album = require('../models/Album')(mongoose);
-
-const createAlbum = async (req, res) => {
+   
+ const createAlbum = async (req, res) => {
   try {
-    
     if (!req.optimizedImages || req.optimizedImages.length === 0) {
       throw new Error('No optimized images found.');
     }
+    const mainImage = req.optimizedImages[0].url; 
+
     const albumData = {
       title: req.body.title,
       artistId: req.params.artistId,
       releaseDate: req.body.releaseDate,
       genre: req.body.genre,
       images: req.optimizedImages.map(img => ({
-        path: img.url
+        path: img.url 
       }))
     };
+
     const album = await albumService.createAlbum(albumData);
     logger.info(`Album creation request handled successfully.`);
 
     res.status(201).json(album);
   } catch (error) {
     logger.error(`Error in createAlbum: ${error.message}.`);
-
     res.status(400).json({ error: error.message });
   }
-};
+};  
 
 const getAllAlbum = async (req, res) => {
   try {
@@ -52,23 +51,21 @@ const getAlbumById = async (req, res) => {
 
     if (!album) {
       logger.warn(`Album with ID ${req.params.id} not found`);
-
       return res.status(404).json({ error: 'Album not found.' });
     }
     const albumResponse = {
       title: album.title,
-      coverImageUrl: album.images.length > 0 ? album.images[0].path : null, // URL CloudFront
+      coverImageUrl: album.images.length > 0 ? `${album.images[0].path}` : null, 
       artistId: album.artistId,
       releaseDate: album.releaseDate,
       genre: album.genre,
       duration: album.duration,
     };
-    logger.info(`Album with ID ${req.params.id} retrieved successfully.`);
 
-    res.status(200).json(album);
+    logger.info(`Album with ID ${req.params.id} retrieved successfully.`);
+    res.status(200).json(albumResponse);
   } catch (error) {
     logger.error(`Error in getAlbumById: ${error.message}.`);
-
     res.status(400).json({ error: error.message });
   }
 };
