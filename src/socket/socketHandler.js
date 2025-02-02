@@ -1,22 +1,25 @@
 const roomService = require('../services/roomService');
-
+const trackService = require('../services/trackService');
 const socketHandler = (io) => {
     io.on('connection', (socket) => {
         console.log('🔗 User connected:', socket.id);
 
         // 📌 Un utilisateur rejoint une salle
         socket.on('join-room', async (roomId, userId) => {
-            try {
+                try {
                 await roomService.getRoom(roomId);
                 await roomService.joinRoom(roomId, userId);
                 socket.join(roomId);
                 socket.userId = userId; // 🔥 Stocker l'ID utilisateur
 
+                
                 const state = await roomService.getPlaybackState(roomId);
                 const participants = await roomService.getParticipants(roomId);
-                const currentTrack = await roomService.getCurrentTrack(roomId);
+                const currentTrackId = await roomService.getCurrentTrack(roomId);
+                const currentTrack = await trackService.getTrackById(currentTrackId);
 
-                socket.emit('room-state', { state, participants, currentTrack });
+                io.to(roomId).emit('testEvent', { state, participants, currentTrack, roomId, userId });
+                io.to(roomId).emit('room-state', { state, participants, currentTrack });
                 io.to(roomId).emit('user-joined', { userId, participants });
 
                 console.log(`✅ User ${userId} joined room ${roomId}`);
@@ -71,7 +74,7 @@ const socketHandler = (io) => {
         // 📌 Changer la position de la lecture
         socket.on('seek', async (roomId, position) => {
             try {
-                await roomService.updatePlaybackState(roomId, null, position);
+                await roomService.updateCurrentTime(roomId, position);
                 io.to(roomId).emit('seek', position);
                 console.log(`⏩ Seek to ${position}s in room ${roomId}`);
             } catch (error) {

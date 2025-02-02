@@ -5,7 +5,7 @@ const logger = require('../utils/logger');
 const createRoom = async (req, res) => {
   try {
     logger.info('Création d’une nouvelle salle...');
-    const room = await roomService.createRoom();
+    const room = await roomService.createRoom(req.body.currentTrackId);
     logger.info(`Salle créée: ${room.id}`);
     res.status(201).json(room);
   } catch (error) {

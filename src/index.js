@@ -58,12 +58,16 @@ const corsOptions = {
   allowedHeaders: ['Content-Type', 'Authorization'],
   // credentials: true,
 };
+const io = new Server(server, {
+  cors: corsOptions
+});
+
+socketHandler(io);
 
 // Enable CORS
 app.use(cors(corsOptions));
 
-const io = new Server(server);
-socketHandler(io);
+
 
 // Database connection function
 /*const connectDB = async () => {
@@ -176,7 +180,7 @@ const startServer = async () => {
 
 
   // Start Express server
-  app.listen(port, () => {
+  server.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
   });
 };
