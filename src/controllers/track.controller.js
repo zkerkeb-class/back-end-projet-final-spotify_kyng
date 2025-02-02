@@ -125,12 +125,16 @@ const getTrackByTitle = async (req, res) => {
 const updatedTrack = async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Get the existing track by ID
     const track = await trackService.getTrackById(id);
 
     if (!track) {
       logger.warn(`Track with ID ${id} not found for update.`);
       return res.status(404).json({ error: 'Track not found.' });
     }
+
+    // Only pass the fields that are provided in the request body
     const updatedData = req.body;
 
     // If new audio files are uploaded, update the track's audio paths
@@ -142,6 +146,8 @@ const updatedTrack = async (req, res) => {
         mimetype: file.mimetype,
       }));
     }
+
+    // Pass the existing track and new data to the service for updating
     const updatedTrack = await trackService.updatedTrack(id, updatedData);
 
     logger.info(`Track with ID ${id} updated successfully.`);
