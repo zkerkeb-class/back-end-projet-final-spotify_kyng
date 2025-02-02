@@ -19,10 +19,10 @@ router.get('/:id', getTrackById);
 router.get('/title/:title', getTrackByTitle);
 
 // Route for updating a track
-router.patch('/:id',audioMiddleware,checkPermission(['edit_metadata']), updatedTrack);
+router.put('/:id', authMiddleware,checkPermission(['edit_metadata']), audioMiddleware, updatedTrack);
 
 // Route for deleting a track
-router.delete('/:id',authMiddleware,checkPermission(['delete_music']), deleteTrack);
+router.delete('/:id', authMiddleware,checkPermission(['delete_music']), deleteTrack);
 
 // Route for getting tracks by artist
 router.get('/artist/:artistId', getTracksByArtist);

@@ -137,6 +137,16 @@ const updatedTrack = async (req, res) => {
     // Only pass the fields that are provided in the request body
     const updatedData = req.body;
 
+    // If new audio files are uploaded, update the track's audio paths
+    if (req.uploadedFiles && req.uploadedFiles.length > 0) {
+      updatedData.audioFiles = req.uploadedFiles.map((file) => ({
+        path: file.convertedPath, // Use the converted path for the audio file
+        originalName: file.originalName,
+        size: file.size,
+        mimetype: file.mimetype,
+      }));
+    }
+
     // Pass the existing track and new data to the service for updating
     const updatedTrack = await trackService.updatedTrack(id, updatedData);
 
