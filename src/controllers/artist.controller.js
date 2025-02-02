@@ -52,10 +52,26 @@ const getArtistById = async (req, res) => {
       return res.status(404).json({ error: 'Artist not found.' });
     }
 
+    // URLs de l'image
+    const cloudfrontUrl = artist.images.length > 0 
+      ? artist.images[0].path 
+      : null;
+
+    const filename = artist.images.length > 0 
+      ? artist.images[0].path.split('/').pop() 
+      : null;
+
+    const localImageUrl = filename 
+      ? `http://localhost:8000/api/images/image/${encodeURIComponent(filename)}` 
+      : null;
+
     const artistResponse = {
       name: artist.name,
       genres: artist.genres,
-      imageUrl: artist.images.length > 0 ? `${artist.images[0].path}` : null, 
+      imageUrls: {
+        cloudfront: cloudfrontUrl, // URL CloudFront
+        local: localImageUrl, // URL locale
+      },
     };
 
     logger.info(`Artist with ID ${req.params.id} retrieved successfully.`);
