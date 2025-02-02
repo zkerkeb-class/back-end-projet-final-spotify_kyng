@@ -18,7 +18,6 @@ const socketHandler = (io) => {
                 const currentTrackId = await roomService.getCurrentTrack(roomId);
                 const currentTrack = await trackService.getTrackById(currentTrackId);
 
-                io.to(roomId).emit('testEvent', { state, participants, currentTrack, roomId, userId });
                 io.to(roomId).emit('room-state', { state, participants, currentTrack });
                 io.to(roomId).emit('user-joined', { userId, participants });
 
