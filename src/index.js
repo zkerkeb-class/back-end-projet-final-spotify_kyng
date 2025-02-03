@@ -20,6 +20,7 @@ const globalRateLimiter = require('./middlewares/rateLimiter.js');
 const logger = require('./utils/logger.js');
 const { runBackup, cleanupOldBackupsOnAzure } = require('./services/backupService.js');
 const metricsRouter = require('../src/routes/metrics.route.js');
+const swaggerSetup = require('../swagger.js');
 
 dotenv.config();
 
@@ -145,6 +146,7 @@ app.use((err, req, res, next) => {
 
 app.use(querycacheMiddleware);
 app.use('/metrics', metricsRouter);
+swaggerSetup(app);
 const startServer = async () => {
   initializeApp();
    
