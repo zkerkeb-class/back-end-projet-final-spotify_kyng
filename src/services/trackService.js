@@ -7,12 +7,12 @@ const { uploadToAzureStorage } = require('./seedService');
 const Artist = require('../models/Artist')(mongoose);
 const { ObjectId } = require('mongodb');
 const { Types } = require('mongoose');
+const { getBlobStream } = require('../utils/azureBlobHelper');
 const Album = require('../models/Album')(mongoose);
 const Playlist = require('../models/Playlist')(mongoose);
 
 // const redisClient = require('../config/redis');
 // const Playlist = require('../models/Playlist');
-
 
 const trackSchema = Joi.object({
   title: Joi.string().required().trim(),
@@ -23,13 +23,15 @@ const trackSchema = Joi.object({
       convertedPath: Joi.string().required(),
       originalName: Joi.string().optional(),
       size: Joi.number().optional(),
-      mimetype: Joi.string().optional()
+      mimetype: Joi.string().optional(),
     }).required()
   ),
-  albumId: Joi.alternatives().try(
-    Joi.string().hex().length(24).optional(), // Matches MongoDB ObjectId string (24 hex characters)
-    Joi.object().optional() // Allows an actual ObjectId
-  ).optional(),
+  albumId: Joi.alternatives()
+    .try(
+      Joi.string().hex().length(24).optional(), // Matches MongoDB ObjectId string (24 hex characters)
+      Joi.object().optional() // Allows an actual ObjectId
+    )
+    .optional(),
   isExplicit: Joi.boolean().optional(),
   lyrics: Joi.string().optional(),
   artistId: Joi.object().optional(),
@@ -38,7 +40,7 @@ const trackSchema = Joi.object({
   numberOfListens: Joi.number().optional(),
   popularity: Joi.number().optional(),
   trackNumber: Joi.number().optional(),
-  releaseYear: Joi.number().optional()
+  releaseYear: Joi.number().optional(),
 });
 
 const createTrack = async (data) => {
@@ -63,7 +65,7 @@ const createTrack = async (data) => {
       data.albumId = null; // or remove it entirely using `delete data.albumId`
     }
 
-    console.log('tt : ', data.albumId)
+    console.log('tt : ', data.albumId);
     const { error, value } = trackSchema.validate(data);
     if (error) {
       throw new Error(error.details[0].message);
@@ -86,7 +88,7 @@ const createTrack = async (data) => {
     const trackPayload = {
       ...value,
       //audioLink: fileName
-      audioLink: azureFileUrl
+      audioLink: azureFileUrl,
     };
 
     const track = await Track.create(trackPayload);
@@ -140,8 +142,7 @@ const getTrackById = async (id) => {
       throw new Error('Track ID is required.');
     }
 
-    const track = await Track.findById(id).populate('artistId')
-    .populate('albumId');
+    const track = await Track.findById(id).populate('artistId').populate('albumId');
 
     if (!track) {
       logger.warn(`Track with ID ${id} not found.`);
@@ -160,9 +161,10 @@ const getTrackByTitle = async (title) => {
     }
 
     const track = await Track.find({
-        title: title
-    }).populate('artistId')
-    .populate('albumId');
+      title: title,
+    })
+      .populate('artistId')
+      .populate('albumId');
 
     if (!track) {
       logger.warn(`Track with title ${title} not found.`);
@@ -182,7 +184,7 @@ const updatedTrack = async (id, data) => {
 
     // Fetch the existing track from the database by ID
     const existingTrack = await Track.findById(id);
-    
+
     if (!existingTrack) {
       throw new Error('Track not found.');
     }
@@ -210,8 +212,6 @@ const updatedTrack = async (id, data) => {
     throw error;
   }
 };
-
-
 
 const deleteTrack = async (id) => {
   try {
@@ -247,7 +247,11 @@ const getTracksByArtist = async (artistId, page = 1, limit = 10) => {
     const skip = (page - 1) * limit;
 
     // Fetch tracks filtered by artist
-    const tracks = await Track.find({ artistId }).populate('artistId').populate('albumId').skip(skip).limit(limit);
+    const tracks = await Track.find({ artistId })
+      .populate('artistId')
+      .populate('albumId')
+      .skip(skip)
+      .limit(limit);
 
     const totalCount = await Track.countDocuments({ artistId });
 
@@ -283,7 +287,11 @@ const getTracksByAlbum = async (albumId, page = 1, limit = 10) => {
     const skip = (page - 1) * limit;
 
     // Fetch tracks filtered by album
-    const tracks = await Track.find({ albumId }).populate('artistId').populate('albumId').skip(skip).limit(limit);
+    const tracks = await Track.find({ albumId })
+      .populate('artistId')
+      .populate('albumId')
+      .skip(skip)
+      .limit(limit);
 
     const totalCount = await Track.countDocuments({ albumId });
 
@@ -376,25 +384,27 @@ const getTracksByYear = async (year, page = 1, limit = 10) => {
 
 const getTop10TracksByReleaseDate = async () => {
   try {
-    logger.info("Fetching top 10 tracks by release date");
+    logger.info('Fetching top 10 tracks by release date');
 
-    const top10Tracks = await Track.find()
-      .sort({ releaseYear: -1 })
-      .limit(10);
+    const top10Tracks = await Track.find().sort({ releaseYear: -1 }).limit(10);
 
     if (!top10Tracks || top10Tracks.length === 0) {
-      logger.warn("No tracks found for top 10 by release date");
-      return { status: 404, message: "No tracks found", data: null };
+      logger.warn('No tracks found for top 10 by release date');
+      return { status: 404, message: 'No tracks found', data: null };
     }
 
     logger.info(`Found ${top10Tracks.length} tracks`);
-    return { status: 200, message: "Top 10 tracks found", data: top10Tracks };
+    return { status: 200, message: 'Top 10 tracks found', data: top10Tracks };
   } catch (error) {
     logger.error(`Error fetching top 10 tracks by release date: ${error.message}`);
-    return { status: 500, message: "Error fetching top 10 tracks", data: null, error: error.message };
+    return {
+      status: 500,
+      message: 'Error fetching top 10 tracks',
+      data: null,
+      error: error.message,
+    };
   }
 };
-
 
 const advancedFilter = async (filters, sorts, page, limit) => {
   try {
@@ -402,17 +412,17 @@ const advancedFilter = async (filters, sorts, page, limit) => {
 
     // Filter by artist
     if (filters.artist) {
-      const artistNames = filters.artist.map(name => name.trim());
+      const artistNames = filters.artist.map((name) => name.trim());
       const artists = await Artist.find({ name: { $in: artistNames } });
-      const artistIds = artists.map(artist => artist._id);
+      const artistIds = artists.map((artist) => artist._id);
       filterQuery.artistId = { $in: artistIds };
     }
 
     // Filter by album
     if (filters.album) {
-      const albumNames = filters.album.map(name => name.trim());
+      const albumNames = filters.album.map((name) => name.trim());
       const albums = await Album.find({ title: { $in: albumNames } });
-      const albumIds = albums.map(album => album._id);
+      const albumIds = albums.map((album) => album._id);
       filterQuery.albumId = { $in: albumIds };
     }
 
@@ -420,20 +430,17 @@ const advancedFilter = async (filters, sorts, page, limit) => {
     if (filters.genre) {
       // Handle genres in Album model
       const albumGenres = await Album.find({ genres: { $in: filters.genre } });
-      const albumIds = albumGenres.map(album => album._id);
-      
+      const albumIds = albumGenres.map((album) => album._id);
+
       // Handle genres in Artist model
       const artistGenres = await Artist.find({ genres: { $in: filters.genre } });
-      const artistIds = artistGenres.map(artist => artist._id);
-      
+      const artistIds = artistGenres.map((artist) => artist._id);
+
       // Combine album and artist IDs for filtering tracks
       const trackQuery = {
-        $or: [
-          { albumId: { $in: albumIds } },
-          { artistId: { $in: artistIds } }
-        ]
+        $or: [{ albumId: { $in: albumIds } }, { artistId: { $in: artistIds } }],
       };
-      
+
       filterQuery = { ...filterQuery, ...trackQuery };
     }
 
@@ -455,13 +462,13 @@ const advancedFilter = async (filters, sorts, page, limit) => {
     // Filter by playlist
     if (filters.playlist) {
       const playlists = await Playlist.find({ name: filters.playlist });
-      const playlistIds = playlists.map(playlist => playlist._id);
+      const playlistIds = playlists.map((playlist) => playlist._id);
       filterQuery.playlistId = { $in: playlistIds };
     }
 
     // Sorting
     let sortQuery = {};
-    sorts.forEach(sort => {
+    sorts.forEach((sort) => {
       if (sort.field === 'duration') {
         sortQuery.duration = sort.direction === 'desc' ? -1 : 1;
       } else if (sort.field === 'releaseDate') {
@@ -485,14 +492,21 @@ const advancedFilter = async (filters, sorts, page, limit) => {
       .limit(limit);
 
     // Add reasons for the filters
-    const reasons = results.map(track => {
+    const reasons = results.map((track) => {
       const reason = [];
       if (filters.artist) reason.push(`Filtered by artist(s): ${filters.artist.join(', ')}`);
       if (filters.album) reason.push(`Filtered by album(s): ${filters.album.join(', ')}`);
       if (filters.genre) reason.push(`Filtered by genre(s): ${filters.genre.join(', ')}`);
-      if (filters.year) reason.push(`Filtered by release year between ${filters.year.start} and ${filters.year.end}`);
-      if (filters.duration) reason.push(`Filtered by track duration between ${filters.duration.min} and ${filters.duration.max} seconds`);
-      if (filters.popularity) reason.push(`Filtered by popularity greater than or equal to ${filters.popularity}`);
+      if (filters.year)
+        reason.push(
+          `Filtered by release year between ${filters.year.start} and ${filters.year.end}`
+        );
+      if (filters.duration)
+        reason.push(
+          `Filtered by track duration between ${filters.duration.min} and ${filters.duration.max} seconds`
+        );
+      if (filters.popularity)
+        reason.push(`Filtered by popularity greater than or equal to ${filters.popularity}`);
       return {
         ...track.toObject(),
         reasons: reason,
@@ -504,7 +518,7 @@ const advancedFilter = async (filters, sorts, page, limit) => {
       totalResults: results.length,
       reasons: reasons,
     });
-    
+
     return {
       status: 200,
       data: reasons,
@@ -520,10 +534,27 @@ const advancedFilter = async (filters, sorts, page, limit) => {
   }
 };
 
+const streamTrack = async (filename) => {
+  if (!filename) {
+    throw new Error('Filename is required.');
+  }
 
+  const track = await mongoose.model('Track').findOne({ audioLink: filename });
+  if (!track) {
+    throw new Error('Track not found.');
+  }
 
+  track.lastPlayed = new Date();
+  track.numberOfListens += 1;
+  await track.save();
 
+  const blobStream = await getBlobStream('spotify', filename);
+  if (!blobStream) {
+    throw new Error('File not found.');
+  }
 
+  return blobStream;
+};
 
 module.exports = {
   createTrack,
@@ -537,5 +568,6 @@ module.exports = {
   getTracksByYear,
   getTrackByTitle,
   getTop10TracksByReleaseDate,
-  advancedFilter
+  advancedFilter,
+  streamTrack
 };

@@ -6,8 +6,8 @@ const excludedRoutes = ['/auth/login'];
 const querycacheMiddleware = async (req, res, next) => {
   // Si la route est exclue du cache, on passe directement au middleware suivant
   if (excludedRoutes.includes(req.path)) {
-        return next();
-    }
+    return next();
+  }
 
   const key = req.originalUrl;
 
@@ -34,4 +34,4 @@ const querycacheMiddleware = async (req, res, next) => {
   }
 };
 
-module.exports = querycacheMiddleware; 
+module.exports = querycacheMiddleware;

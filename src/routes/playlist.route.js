@@ -4,6 +4,12 @@ const router = express.Router();
 const playlistController = require('../controllers/playlist.controller');
 const authMiddleware = require('../middlewares/authMiddleware');
 
+// Route for "Dernières écoutes" playlist
+router.get('/last-played', playlistController.getLastPlayedPlaylist);
+
+// Route for "Les plus écoutées" playlist
+router.get('/most-played', playlistController.getMostPlayedPlaylist);
+
 // Route pour créer une playlist
 router.post('/', playlistController.createPlaylist);
 
@@ -20,5 +26,6 @@ router.put('/:id', playlistController.updatedPlaylist);
 router.delete('/:id', playlistController.deletePlaylist);
 
 router.post('/:playlistId/tracks', playlistController.addTrackToPlaylist);
+
 
 module.exports = router;

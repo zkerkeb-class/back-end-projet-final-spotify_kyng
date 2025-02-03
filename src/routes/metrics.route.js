@@ -1,5 +1,11 @@
 const express = require('express');
-const { getServerMetrics, trackBandwidth, trackSuccessFailure, resetMetrics, measureResponseTime } = require('../services/monitoringService');
+const {
+  getServerMetrics,
+  trackBandwidth,
+  trackSuccessFailure,
+  resetMetrics,
+  measureResponseTime,
+} = require('../services/monitoringService');
 const checkPermission = require('../middlewares/rbacMiddleware');
 const authMiddleware = require('../middlewares/authMiddleware');
 const router = express.Router();
@@ -14,7 +20,7 @@ router.use(trackBandwidth);
 router.use(trackSuccessFailure);
 
 // Route pour récupérer les métriques
-router.get('/',authMiddleware, checkPermission(['view_statistics']), (req, res) => {
+router.get('/', authMiddleware, checkPermission(['view_statistics']), (req, res) => {
   const metrics = getServerMetrics();
 
   // Ajouter le temps de réponse

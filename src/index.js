@@ -9,7 +9,7 @@ const { trackBandwidth, trackSuccessFailure } = require('./services/monitoringSe
 const dotenv = require('dotenv');
 const http = require('http');
 //const Redis = require('ioredis');
-//const dns = require('dns').promises; 
+//const dns = require('dns').promises;
 const cors = require('cors');
 const { Server } = require('socket.io');
 require('dotenv').config({ path: '../.env.dev' });
@@ -29,7 +29,6 @@ const socketHandler = require('./socket/socketHandler.js');
 const logger = require('./utils/logger.js');
 const { runBackup, cleanupOldBackupsOnAzure } = require('./services/backupService.js');
 
-
 dotenv.config();
 
 const app = express();
@@ -45,10 +44,12 @@ const metrics = {
 };
 
 // Middleware pour mesurer le temps de réponse
-app.use(responseTime((req, res, time) => {
-  metrics.responseTime = time; // Mettre à jour le temps de réponse dans l'objet global
-  console.log(`Requête ${req.method} ${req.url} - Temps de réponse : ${time.toFixed(2)} ms`);
-}));
+app.use(
+  responseTime((req, res, time) => {
+    metrics.responseTime = time; // Mettre à jour le temps de réponse dans l'objet global
+    console.log(`Requête ${req.method} ${req.url} - Temps de réponse : ${time.toFixed(2)} ms`);
+  })
+);
 
 //app.use(cookieParser());
 app.use(express.json()); // Pour parser le JSON dans les requêtes
@@ -65,15 +66,13 @@ const corsOptions = {
   // credentials: true,
 };
 const io = new Server(server, {
-  cors: corsOptions
+  cors: corsOptions,
 });
 
 socketHandler(io);
 
 // Enable CORS
 app.use(cors(corsOptions));
-
-
 
 // Database connection function
 /*const connectDB = async () => {
@@ -92,17 +91,21 @@ app.use(cors(corsOptions));
 };*/
 async function connectWithRetry() {
   const pRetry = (await import('p-retry')).default;
-  return pRetry(() => mongoose.connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    connectTimeoutMS: 5000,
-    socketTimeoutMS: 45000,
-  }), {
-    retries: 3,
-    onFailedAttempt: (error) => {
-      console.log(`Tentative ${error.attemptNumber} échouée. Erreur: ${error.message}`);
-    },
-  });
+  return pRetry(
+    () =>
+      mongoose.connect(process.env.MONGO_URI, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+        connectTimeoutMS: 5000,
+        socketTimeoutMS: 45000,
+      }),
+    {
+      retries: 3,
+      onFailedAttempt: (error) => {
+        console.log(`Tentative ${error.attemptNumber} échouée. Erreur: ${error.message}`);
+      },
+    }
+  );
 }
 
 // Configuration de la sauvegarde
@@ -111,16 +114,13 @@ const backupConfig = {
   notificationUrl: process.env.NOTIFICATION_URL, // URL de notification (ntfy.sh)
 };
 
-
-
-
 // Application initialization function
 const initializeApp = async () => {
   try {
     // Step 1: Connect to the database
     await connectWithRetry()
       .then(() => console.log('Connecté à MongoDB'))
-      .catch(err => console.error('Impossible de se connecter après 3 tentatives.', err));
+      .catch((err) => console.error('Impossible de se connecter après 3 tentatives.', err));
     mongoose.set('debug', true); // Temps d'exécution des requêtes de base de données
 
     // Step 2: Schedule the backup process to run daily at midnight
@@ -150,7 +150,6 @@ const initializeApp = async () => {
 
 app.use(express.json());
 
-
 /*app.get('/api/csrf-token', csrfProtection, (req, res) => {
   res.json({ csrfToken: req.csrfToken() });
 });
@@ -173,13 +172,15 @@ app.get('/api/response-time', (req, res) => {
 // Routes
 
 app.use('/api', router);
-app.use(timeout.handler({
-  timeout: 10000,
-  onTimeout: (req, res) => {
-    res.status(503).json({ error: 'Requête expirée, veuillez réessayer plus tard.' });
-  },
-  disable: ['write', 'setHeaders'], // Empêche de modifier les headers après timeout
-}));
+app.use(
+  timeout.handler({
+    timeout: 10000,
+    onTimeout: (req, res) => {
+      res.status(503).json({ error: 'Requête expirée, veuillez réessayer plus tard.' });
+    },
+    disable: ['write', 'setHeaders'], // Empêche de modifier les headers après timeout
+  })
+);
 app.use((err, req, res, next) => {
   if (err.code === 'ETIMEDOUT') {
     return res.status(504).json({ error: 'Timeout serveur, veuillez réessayer plus tard.' });
@@ -196,14 +197,11 @@ const startServer = async () => {
 
   // redisClient = await connectRedis(redisUrlEx);
 
-
-
   // Start Express server
   server.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
   });
 };
-
 
 process.on('SIGINT', async () => {
   try {
@@ -217,4 +215,3 @@ process.on('SIGINT', async () => {
 });
 
 startServer();
-

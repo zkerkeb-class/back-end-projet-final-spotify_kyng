@@ -1,6 +1,5 @@
 const redisClient = require('../index');
 
-
 const getFileFromCache = async (key) => {
   try {
     const cachedFile = await redisClient.get(key);

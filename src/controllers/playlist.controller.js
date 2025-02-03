@@ -93,12 +93,34 @@ const addTrackToPlaylist = async (req, res) => {
     const { trackId } = req.body;
 
     const updatedPlaylist = await playlistService.addTrackToPlaylist(playlistId, trackId);
-    
+
     logger.info(`Track added to playlist ${playlistId} successfully.`);
     res.status(200).json(updatedPlaylist);
   } catch (error) {
     logger.error(`Error adding track to playlist: ${error.message}`);
     res.status(400).json({ error: error.message });
+  }
+};
+
+// Get the "Dernières écoutes" playlist
+const getLastPlayedPlaylist = async (req, res) => {
+  try {
+    const lastPlayedTracks = await playlistService.getLastPlayedTracks();
+    logger.info('Fetching "Dernières écoutes" playlist.');
+    res.json(lastPlayedTracks);
+  } catch (error) {
+    res.status(500).json({ error: 'Error fetching last played tracks.' });
+  }
+};
+
+// Get the "Les plus écoutées" playlist
+const getMostPlayedPlaylist = async (req, res) => {
+  try {
+    const mostPlayedTracks = await playlistService.getMostPlayedTracks();
+    logger.info('Fetching "Les plus écoutées" playlist.');
+    res.json(mostPlayedTracks);
+  } catch (error) {
+    res.status(500).json({ error: 'Error fetching most played tracks.' });
   }
 };
 
@@ -108,5 +130,7 @@ module.exports = {
   getPlaylistById,
   updatedPlaylist,
   deletePlaylist,
-  addTrackToPlaylist
+  addTrackToPlaylist,
+  getLastPlayedPlaylist,
+  getMostPlayedPlaylist
 };

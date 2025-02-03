@@ -36,7 +36,9 @@ const getRoomState = async (req, res) => {
     const participants = await roomService.getParticipants(roomId);
     res.status(200).json({ state, participants });
   } catch (error) {
-    logger.error(`Erreur lors de la récupération de l’état de la salle ${roomId}: ${error.message}`);
+    logger.error(
+      `Erreur lors de la récupération de l’état de la salle ${roomId}: ${error.message}`
+    );
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
@@ -50,7 +52,9 @@ const inviteToRoom = async (req, res) => {
     const result = await roomService.inviteToRoom(roomId, userId);
     res.status(200).json(result);
   } catch (error) {
-    logger.error(`Erreur lors de l’invitation de l’utilisateur ${userId} à rejoindre la salle: ${error.message}`);
+    logger.error(
+      `Erreur lors de l’invitation de l’utilisateur ${userId} à rejoindre la salle: ${error.message}`
+    );
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
@@ -59,5 +63,5 @@ module.exports = {
   createRoom,
   getRoom,
   getRoomState,
-  inviteToRoom
+  inviteToRoom,
 };

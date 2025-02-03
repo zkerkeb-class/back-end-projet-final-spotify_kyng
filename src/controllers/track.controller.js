@@ -25,7 +25,7 @@ const createTrack = async (req, res) => {
     let metadata = {};
     try {
       metadata = await extractAudioMetadata(convertedPath);
-      console.log('tt° : ', metadata)
+      console.log('tt° : ', metadata);
     } catch (metadataError) {
       console.warn('Metadata extraction failed, generating fake data');
     }
@@ -58,7 +58,7 @@ const createTrack = async (req, res) => {
         producer: faker.person.fullName(),
         songwriter: faker.person.fullName(),
       },
-      releaseYear: req.body.releaseYear || metadata.year
+      releaseYear: req.body.releaseYear || metadata.year,
     };
 
     // Call the service to create a track
@@ -158,8 +158,6 @@ const updatedTrack = async (req, res) => {
   }
 };
 
-
-
 const deleteTrack = async (req, res) => {
   try {
     const track = await trackService.deleteTrack(req.params.id);
@@ -181,7 +179,7 @@ const deleteTrack = async (req, res) => {
 
 const getTracksByArtist = async (req, res) => {
   try {
-    const { artistId } = req.params; 
+    const { artistId } = req.params;
     const { page = 1, limit = 10 } = req.query;
 
     const parsedPage = parseInt(page, 10);
@@ -201,7 +199,7 @@ const getTracksByArtist = async (req, res) => {
 
 const getTracksByAlbum = async (req, res) => {
   try {
-    const { albumId } = req.params; 
+    const { albumId } = req.params;
     const { page = 1, limit = 10 } = req.query;
 
     const parsedPage = parseInt(page, 10);
@@ -241,7 +239,11 @@ const getTracksByYear = async (req, res) => {
       return res.status(400).json({ error: 'Year is required.' });
     }
 
-    const tracks = await trackService.getTracksByYear(parseInt(year, 10), parseInt(page, 10), parseInt(limit, 10));
+    const tracks = await trackService.getTracksByYear(
+      parseInt(year, 10),
+      parseInt(page, 10),
+      parseInt(limit, 10)
+    );
     res.status(200).json(tracks);
   } catch (err) {
     logger.error(`Error in getTracksByYear: ${err.message}`);
@@ -251,26 +253,16 @@ const getTracksByYear = async (req, res) => {
 
 const streamTrack = async (req, res) => {
   const { filename } = req.params;
-  console.log('t : ', filename)
   try {
-    if (!filename) {
-      return res.status(400).json({ error: 'Filename is required.' });
-    }
-
-    const blobStream = await getBlobStream('spotify', filename); 
-
-    if (!blobStream) {
-      return res.status(404).json({ error: 'File not found.' });
-    }
-
-    res.setHeader('Content-Type', 'm4a', 'audio/mpeg'); 
-    blobStream.pipe(res); 
+    const blobStream = await trackService.streamTrack(filename);
+    res.setHeader('Content-Type', 'audio/mpeg');
+    blobStream.pipe(res);
     logger.info(`Streaming file ${filename} successfully.`);
   } catch (error) {
     logger.error(`Error streaming track: ${error.message}`);
-    res.status(500).json({ error: 'Error streaming track.' });
+    res.status(error.message === 'Track not found.' || error.message === 'File not found.' ? 404 : 500).json({ error: error.message });
   }
-};
+}
 
 const getTop10TracksByReleaseDate = async (req, res) => {
   const result = await trackService.getTop10TracksByReleaseDate();
@@ -278,10 +270,9 @@ const getTop10TracksByReleaseDate = async (req, res) => {
   if (result.status === 200) {
     logger.info(result.message);
     return res.status(200).json(result.data);
-  } else {
-    logger.error(`Error streaming track: ${result.message}`);
-    return res.status(result.status).json({ message: result.message, error: result.error });
   }
+  logger.error(`Error streaming track: ${result.message}`);
+  return res.status(result.status).json({ message: result.message, error: result.error });
 };
 
 const advancedFilter = async (req, res) => {
@@ -298,7 +289,7 @@ const advancedFilter = async (req, res) => {
       playlist = '',
       sorts = '',
       page = 1,
-      limit = 10
+      limit = 10,
     } = req.query;
 
     const filters = {};
@@ -324,16 +315,11 @@ const advancedFilter = async (req, res) => {
     return res.status(200).json(result);
   } catch (error) {
     logger.error(`Error in advanced filter : ${result.message}`);
-    return res.status(500).json({ message: 'Error fetching filtered tracks', error: error.message });
+    return res
+      .status(500)
+      .json({ message: 'Error fetching filtered tracks', error: error.message });
   }
 };
-
-
-
-
-
-
-
 
 module.exports = {
   createTrack,
@@ -348,6 +334,5 @@ module.exports = {
   streamTrack,
   getTrackByTitle,
   getTop10TracksByReleaseDate,
-  advancedFilter
+  advancedFilter,
 };
-

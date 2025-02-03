@@ -1,6 +1,8 @@
 const { BlobServiceClient } = require('@azure/storage-blob');
 
-const blobServiceClient = BlobServiceClient.fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING);
+const blobServiceClient = BlobServiceClient.fromConnectionString(
+  process.env.AZURE_STORAGE_CONNECTION_STRING
+);
 
 const getBlobStream = async (containerName, filename) => {
   try {
@@ -9,7 +11,7 @@ const getBlobStream = async (containerName, filename) => {
 
     // Check if the blob exists
     const exists = await blobClient.exists();
-    console.log('o : ', exists)
+    console.log('o : ', exists);
 
     if (!exists) {
       return null;

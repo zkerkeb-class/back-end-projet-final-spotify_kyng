@@ -2,7 +2,7 @@ const roles = require('../config/roles');
 
 const checkPermission = (requiredPermissions) => {
   return (req, res, next) => {
-    const userRole = req.user?.role; 
+    const userRole = req.user?.role;
     if (!userRole) {
       return res.status(401).json({ message: 'Unauthorized: no role assigned.' });
     }

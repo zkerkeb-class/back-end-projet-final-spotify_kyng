@@ -154,8 +154,8 @@ const addTrackToPlaylist = async (playlistId, trackId) => {
 
     // console.log('te : ', trackId)
     const trackIdObject = mongoose.Types.ObjectId.isValid(trackId)
-          ? new mongoose.Types.ObjectId(trackId)
-          : trackId;
+      ? new mongoose.Types.ObjectId(trackId)
+      : trackId;
     // Check if track exists
     const track = await Track.findById(trackIdObject);
     if (!track) {
@@ -163,9 +163,7 @@ const addTrackToPlaylist = async (playlistId, trackId) => {
     }
 
     // Add track to playlist's tracks
-    playlist.pistes_audio = playlist.pistes_audio 
-      ? `${playlist.pistes_audio},${trackId}` 
-      : trackId;
+    playlist.pistes_audio = playlist.pistes_audio ? `${playlist.pistes_audio},${trackId}` : trackId;
 
     // Update playlist duration
     playlist.duration += track.duration;
@@ -180,6 +178,31 @@ const addTrackToPlaylist = async (playlistId, trackId) => {
   }
 };
 
+// Get the 20 most recently played tracks
+const getLastPlayedTracks = async () => {
+  logger.info('Fetching last played tracks.');
+  return await Track
+    .find({ lastPlayed: { $ne: null } })
+    .sort({ lastPlayed: -1 })
+    .limit(20);
+};
+
+// Get the 20 most played tracks
+const getMostPlayedTracks = async () => {
+  logger.info('Fetching most played tracks.');
+  return await Track
+    .find({})
+    .sort({ numberOfListens: -1 })
+    .limit(20);
+};
+
 module.exports = {
-  createPlaylist, getAllPlaylists, getPlaylistById, updatedPlaylist, deletePlaylist, addTrackToPlaylist
+  createPlaylist,
+  getAllPlaylists,
+  getPlaylistById,
+  updatedPlaylist,
+  deletePlaylist,
+  addTrackToPlaylist,
+  getLastPlayedTracks,
+  getMostPlayedTracks
 };

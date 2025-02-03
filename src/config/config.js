@@ -17,7 +17,7 @@ const {
   MONGO_URI,
   // AZURE_STORAGE_ACCOUNT_KEY,
   // AZURE_STORAGE_ACCOUNT_NAME,
- // CLOUDFRONT_URL,
+  // CLOUDFRONT_URL,
 } = process.env;
 
 module.exports = {

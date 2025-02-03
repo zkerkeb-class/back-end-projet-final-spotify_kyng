@@ -53,9 +53,11 @@ const measureResponseTime = (req, res, next) => {
 
   res.on('finish', () => {
     const duration = process.hrtime(startTime); // Temps écoulé en [secondes, nanosecondes]
-    const responseTimeMs = (duration[0] * 1000) + (duration[1] / 1000000); // Convertir en millisecondes
+    const responseTimeMs = duration[0] * 1000 + duration[1] / 1000000; // Convertir en millisecondes
     req.responseTime = responseTimeMs; // Stocker le temps de réponse dans req
-    console.log(`Requête ${req.method} ${req.url} - Temps de réponse : ${responseTimeMs.toFixed(2)} ms`);
+    console.log(
+      `Requête ${req.method} ${req.url} - Temps de réponse : ${responseTimeMs.toFixed(2)} ms`
+    );
   });
 
   next();
@@ -76,7 +78,7 @@ const measureRedisLatency = async () => {
 const measureMediaProcessingTime = async (file) => {
   const startTime = Date.now();
   // Simuler un traitement de média
-  await new Promise(resolve => setTimeout(resolve, 1000)); 
+  await new Promise((resolve) => setTimeout(resolve, 1000));
   const processingTime = Date.now() - startTime;
   metrics.mediaProcessingTime = processingTime;
   console.log(`Temps de traitement des médias : ${processingTime} ms`);
@@ -97,11 +99,11 @@ const getServerMetrics = () => {
   const dbQueryExecutionTime = mongoose.connection.readyState;
 
   // Utilisation du disque
-  let diskUsage = "N/A";
+  let diskUsage = 'N/A';
   try {
     diskUsage = execSync('df -h /').toString().trim(); // Utilisation du disque pour la racine
   } catch (error) {
-    console.error("Erreur récupération disque:", error);
+    console.error('Erreur récupération disque:', error);
   }
 
   // Retour des métriques

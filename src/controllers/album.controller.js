@@ -1,22 +1,21 @@
 const albumService = require('../services/albumService');
 const logger = require('../utils/logger');
 
-   
- const createAlbum = async (req, res) => {
+const createAlbum = async (req, res) => {
   try {
     if (!req.optimizedImages || req.optimizedImages.length === 0) {
       throw new Error('No optimized images found.');
     }
-    const mainImage = req.optimizedImages[0].url; 
+    const mainImage = req.optimizedImages[0].url;
 
     const albumData = {
       title: req.body.title,
       artistId: req.params.artistId,
       releaseDate: req.body.releaseDate,
       genre: req.body.genre,
-      images: req.optimizedImages.map(img => ({
-        path: img.url 
-      }))
+      images: req.optimizedImages.map((img) => ({
+        path: img.url,
+      })),
     };
 
     const album = await albumService.createAlbum(albumData);
@@ -27,7 +26,7 @@ const logger = require('../utils/logger');
     logger.error(`Error in createAlbum: ${error.message}.`);
     res.status(400).json({ error: error.message });
   }
-};  
+};
 
 const getAllAlbum = async (req, res) => {
   try {
@@ -45,7 +44,6 @@ const getAllAlbum = async (req, res) => {
   }
 };
 
-     
 const getAlbumById = async (req, res) => {
   try {
     const album = await albumService.getAlbumById(req.params.id);
@@ -56,15 +54,17 @@ const getAlbumById = async (req, res) => {
     }
 
     // URLs de l'image
-    const cloudfrontUrl = album.images.length > 0 
-      ? album.images[0].path // Utiliser directement l'URL CloudFront
-      : null;
+    const cloudfrontUrl =
+      album.images.length > 0
+        ? album.images[0].path // Utiliser directement l'URL CloudFront
+        : null;
 
-    const filename = album.images.length > 0 
-      ? album.images[0].path.split('/').pop() // Extraire le nom du fichier
-      : null;
+    const filename =
+      album.images.length > 0
+        ? album.images[0].path.split('/').pop() // Extraire le nom du fichier
+        : null;
 
-    const localImageUrl = filename 
+    const localImageUrl = filename
       ? `http://localhost:8000/api/images/image/${encodeURIComponent(filename)}` // Construire l'URL locale
       : null;
 
@@ -113,7 +113,7 @@ const updatedAlbum = async (req, res) => {
 
     // If there are new optimized images uploaded, update the album's image field
     if (req.optimizedImages && req.optimizedImages.length > 0) {
-      albumData.images = req.optimizedImages.map(img => ({ path: img.url }));
+      albumData.images = req.optimizedImages.map((img) => ({ path: img.url }));
     }
 
     if (!albumData.artistId) {
@@ -135,7 +135,6 @@ const updatedAlbum = async (req, res) => {
     res.status(400).json({ error: error.message });
   }
 };
-
 
 const deleteAlbum = async (req, res) => {
   try {
@@ -194,8 +193,8 @@ const getAlbumsByYearController = async (req, res) => {
 
   try {
     if (!year || isNaN(year)) {
-      logger.warn("Invalid year parameter provided.");
-      return res.status(400).json({ message: "Invalid year parameter." });
+      logger.warn('Invalid year parameter provided.');
+      return res.status(400).json({ message: 'Invalid year parameter.' });
     }
 
     const albums = await albumService.getAlbumsByYear(Number(year));
@@ -209,7 +208,7 @@ const getAlbumsByYearController = async (req, res) => {
     return res.status(200).json(albums);
   } catch (error) {
     logger.error(`Failed to fetch albums for year ${year}: ${error.message}`);
-    return res.status(500).json({ message: "Internal server error." });
+    return res.status(500).json({ message: 'Internal server error.' });
   }
 };
 
@@ -218,18 +217,17 @@ const getTop10RecentAlbums = async (req, res) => {
     const result = await albumService.getTop10RecentAlbums();
 
     if (result.status === 200) {
-    logger.info(`Fetched latest albums ${result} successfully.`);
+      logger.info(`Fetched latest albums ${result} successfully.`);
 
       return res.status(200).json({
         message: result.message,
         data: result.data,
       });
-    } else {
-      return res.status(result.status).json({
-        message: result.message,
-        error: result.error,
-      });
     }
+    return res.status(result.status).json({
+      message: result.message,
+      error: result.error,
+    });
   } catch (error) {
     logger.error(`Error in controller: ${error.message}`);
     return res.status(500).json({
@@ -243,7 +241,7 @@ const searchAlbums = async (req, res) => {
   try {
     const { title, artistName, genre, releaseYear, page, limit } = req.query;
     const filters = { title, artistName, genre, releaseYear };
-    
+
     const result = await albumService.searchAlbums(filters, Number(page), Number(limit));
 
     logger.info(`Results found for this research : ${result}.`);
@@ -265,5 +263,5 @@ module.exports = {
   getAlbumsByYearController,
   getAlbumByTitle,
   getTop10RecentAlbums,
-  searchAlbums
+  searchAlbums,
 };

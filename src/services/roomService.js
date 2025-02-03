@@ -11,8 +11,8 @@ const roomSchema = Joi.object({
 
 // 📌 Création d'une salle
 const createRoom = async (currentTrack) => {
-    console.log({currentTrack});
-    
+  console.log({ currentTrack });
+
   try {
     const roomId = uuidv4();
     const shareUrl = `${process.env.FRONT_URL}/room/${roomId}`;

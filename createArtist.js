@@ -39,7 +39,7 @@ const createArtist = async () => {
       lastname: 'Spotify',
       email: 'spotifykyng@artist.com',
       phone: '0660606061',
-      role: 'artist', 
+      role: 'artist',
       password: hashedPassword,
       playlists: [],
       preferences: {},

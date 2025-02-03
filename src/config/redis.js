@@ -2,8 +2,8 @@ const Redis = require('ioredis');
 
 const redisUrl = process.env.REDIS_URL_EX;
 const redisClient = new Redis(redisUrl);
- //enableOfflineQueue: false,
- /*const redisClient = new Redis(redisUrl, {
+//enableOfflineQueue: false,
+/*const redisClient = new Redis(redisUrl, {
   tls: {
     rejectUnauthorized: false,
   },

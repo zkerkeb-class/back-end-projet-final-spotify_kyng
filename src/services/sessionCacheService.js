@@ -69,7 +69,9 @@ const addToBlacklist = async (token) => {
 const isTokenBlacklisted = async (token) => {
   const blacklistKey = `blacklist:${token}`;
   const isBlacklisted = await redisClient.get(blacklistKey);
-  console.log(`Checking if token is blacklisted: ${token}, Is blacklisted: ${isBlacklisted === 'true'}`);
+  console.log(
+    `Checking if token is blacklisted: ${token}, Is blacklisted: ${isBlacklisted === 'true'}`
+  );
   return isBlacklisted === 'true';
 };
 

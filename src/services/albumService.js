@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
-const { ObjectId } = mongoose.Types;  // Get ObjectId from mongoose.Types
-
+const { ObjectId } = mongoose.Types; // Get ObjectId from mongoose.Types
 
 const Album = require('../models/Album')(mongoose);
 const Artist = require('../models/Artist')(mongoose);
@@ -17,11 +16,13 @@ const albumSchema = Joi.object({
   linkType: Joi.string().optional(),
   artistId: Joi.string().optional(),
   releaseDate: Joi.date().optional(),
-  images: Joi.array().items(
-    Joi.object({
-      path: Joi.string().required()
-    })
-  ).optional(),
+  images: Joi.array()
+    .items(
+      Joi.object({
+        path: Joi.string().required(),
+      })
+    )
+    .optional(),
   audioTracks: Joi.array().items(Joi.string()).optional(),
   duration: Joi.number().min(0).optional(),
   genre: Joi.string().optional(),
@@ -115,7 +116,7 @@ const getAlbumByTitle = async (title) => {
     }
 
     const album = await Album.find({
-      title: title
+      title: title,
     }).populate('artistId', 'name');
 
     if (!album) {
@@ -157,7 +158,6 @@ const updatedAlbum = async (id, data) => {
     throw error;
   }
 };
-
 
 const deleteAlbum = async (id) => {
   try {
@@ -258,7 +258,7 @@ const getAlbumsByGenre = async (genre, page = 1, limit = 10) => {
 const getAlbumsByYear = async (year) => {
   try {
     if (!year) {
-      throw new Error("Year parameter is required.");
+      throw new Error('Year parameter is required.');
     }
 
     const cacheKey = `albums:year:${year}`;
@@ -272,7 +272,7 @@ const getAlbumsByYear = async (year) => {
 
     const albums = await Album.find({
       $expr: {
-        $eq: [{ $year: "$releaseDate" }, Number(year)], // Match the year
+        $eq: [{ $year: '$releaseDate' }, Number(year)], // Match the year
       },
     });
 
@@ -288,22 +288,28 @@ const getAlbumsByYear = async (year) => {
 
 const getTop10RecentAlbums = async () => {
   try {
-    const recentAlbums = await Album.find().sort({ releaseDate: -1 }).limit(10).populate('artistId');
+    const recentAlbums = await Album.find()
+      .sort({ releaseDate: -1 })
+      .limit(10)
+      .populate('artistId');
 
     if (!recentAlbums || recentAlbums.length === 0) {
-      logger.warn("No recent albums found.");
-      return { status: 404, message: "No recent albums found", data: null };
+      logger.warn('No recent albums found.');
+      return { status: 404, message: 'No recent albums found', data: null };
     }
 
     logger.info(`Found ${recentAlbums.length} recent albums.`);
-    return { status: 200, message: "Top 10 recent albums found", data: recentAlbums };
+    return { status: 200, message: 'Top 10 recent albums found', data: recentAlbums };
   } catch (error) {
     logger.error(`Error fetching top 10 recent albums: ${error.message}`);
-    return { status: 500, message: "Error fetching recent albums", data: null, error: error.message };
+    return {
+      status: 500,
+      message: 'Error fetching recent albums',
+      data: null,
+      error: error.message,
+    };
   }
 };
-
-
 
 // SEARCH
 
@@ -327,16 +333,13 @@ const searchAlbums = async (filters, page = 1, limit = 10) => {
     if (filters.releaseYear) {
       query.releaseDate = {
         $gte: new Date(`${filters.releaseYear}-01-01`),
-        $lt: new Date(`${Number(filters.releaseYear) + 1}-01-01`)
+        $lt: new Date(`${Number(filters.releaseYear) + 1}-01-01`),
       };
     }
 
     const skip = (page - 1) * limit;
     const totalCount = await Album.countDocuments(query);
-    const albums = await Album.find(query)
-      .populate('artistId', 'name')
-      .skip(skip)
-      .limit(limit);
+    const albums = await Album.find(query).populate('artistId', 'name').skip(skip).limit(limit);
 
     logger.info(`Found ${totalCount} results for this research.`);
 
@@ -366,5 +369,5 @@ module.exports = {
   getAlbumsByYear,
   getAlbumByTitle,
   getTop10RecentAlbums,
-  searchAlbums
+  searchAlbums,
 };

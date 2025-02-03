@@ -44,6 +44,7 @@ const search = async (query, page = 1, limit = 10) => {
       searchTracks(searchTerms),
       searchArtists(searchTerms),
       searchAlbums(searchTerms),
+      searchLyrics(searchTerms),
     ]);
 
     const rankedResults = rankResults(results.flat());
@@ -223,7 +224,12 @@ const calculateAlbumScore = (album, searchTerms) => {
 };
 
 const normalize = (text) => {
-  return text ? text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') : '';
+  return text
+    ? text
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+    : '';
 };
 
 const buildSearchPattern = (terms) => {
@@ -237,11 +243,11 @@ const getTermVariations = (term) => {
   // Ensure phoneticCode is always a string
   if (Array.isArray(phoneticCode)) {
     phoneticCode.forEach((code) => {
-      if (typeof code === "string" && code.length > 0) {
+      if (typeof code === 'string' && code.length > 0) {
         variations.push(code);
       }
     });
-  } else if (typeof phoneticCode === "string" && phoneticCode.length > 0) {
+  } else if (typeof phoneticCode === 'string' && phoneticCode.length > 0) {
     variations.push(phoneticCode);
   }
 
@@ -297,6 +303,31 @@ const findSimilarTracks = async (trackId) => {
     .sort((a, b) => b.similarity - a.similarity);
 };
 
+const searchLyrics = async (searchTerms) => {
+  logger.info('Searching lyrics...');
+  const tracks = await Track.find({
+    lyrics: { $regex: buildSearchPattern(searchTerms), $options: 'i' },
+  }).populate('artistId albumId');
+
+  return tracks.map((track) => ({
+    type: 'track',
+    data: track,
+    score: calculateLyricsScore(track, searchTerms),
+  }));
+};
+const calculateLyricsScore = (track, searchTerms) => {
+  let score = 0;
+  const lyrics = normalize(track.lyrics);
+
+  searchTerms.forEach((term) => {
+    const variations = getTermVariations(term);
+    variations.forEach((variant) => {
+      if (lyrics?.includes(variant)) score += SCORE_WEIGHTS.LYRICS_MATCH;
+    });
+  });
+
+  return score;
+};
 const calculateSimilarityScore = (sourceTrack, targetTrack) => {
   let score = 0;
 
@@ -313,5 +344,5 @@ const calculateSimilarityScore = (sourceTrack, targetTrack) => {
 };
 
 module.exports = {
-  search
+  search,
 };

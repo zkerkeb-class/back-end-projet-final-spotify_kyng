@@ -7,14 +7,14 @@ const createArtist = async (req, res) => {
       throw new Error('No optimized images found.');
     }
 
-    const mainImage = req.optimizedImages[0].url; 
+    const mainImage = req.optimizedImages[0].url;
 
     const artistData = {
       name: req.body.name,
       genres: req.body.genres,
-      images: req.optimizedImages.map(img => ({
-        path: img.url 
-      }))
+      images: req.optimizedImages.map((img) => ({
+        path: img.url,
+      })),
     };
 
     const artist = await artistService.createArtist(artistData);
@@ -25,7 +25,7 @@ const createArtist = async (req, res) => {
     logger.error(`Error in createArtist: ${error.message}.`);
     res.status(400).json({ error: error.message });
   }
-}; 
+};
 
 const getAllArtist = async (req, res) => {
   try {
@@ -53,16 +53,12 @@ const getArtistById = async (req, res) => {
     }
 
     // URLs de l'image
-    const cloudfrontUrl = artist.images.length > 0 
-      ? artist.images[0].path 
-      : null;
+    const cloudfrontUrl = artist.images.length > 0 ? artist.images[0].path : null;
 
-    const filename = artist.images.length > 0 
-      ? artist.images[0].path.split('/').pop() 
-      : null;
+    const filename = artist.images.length > 0 ? artist.images[0].path.split('/').pop() : null;
 
-    const localImageUrl = filename 
-      ? `http://localhost:8000/api/images/image/${encodeURIComponent(filename)}` 
+    const localImageUrl = filename
+      ? `http://localhost:8000/api/images/image/${encodeURIComponent(filename)}`
       : null;
 
     const artistResponse = {
@@ -104,12 +100,11 @@ const getArtistByName = async (req, res) => {
 const updatedArtist = async (req, res) => {
   try {
     let artistData = req.body;
-    
+
     // If there are new optimized images uploaded, we should update the album's image field
     if (req.optimizedImages && req.optimizedImages.length > 0) {
-      artistData.images = req.optimizedImages.map(img => ({ path: img.path }));
+      artistData.images = req.optimizedImages.map((img) => ({ path: img.path }));
     }
-
 
     const artist = await artistService.updatedArtist(req.params.id, artistData);
 
@@ -164,7 +159,7 @@ const getArtistsByGenre = async (req, res) => {
 const getTop10ArtistsByListens = async (req, res) => {
   try {
     const topArtists = await artistService.getTop10ArtistsByNumberOfListens();
-    logger.info("Top 10 artists retrieved successfully.");
+    logger.info('Top 10 artists retrieved successfully.');
     res.status(200).json(topArtists);
   } catch (error) {
     logger.error(`Error in getTop10ArtistsByListens: ${error.message}`);
@@ -180,5 +175,5 @@ module.exports = {
   deleteArtist,
   getArtistsByGenre,
   getArtistByName,
-  getTop10ArtistsByListens
+  getTop10ArtistsByListens,
 };

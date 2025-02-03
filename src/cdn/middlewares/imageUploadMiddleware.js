@@ -35,7 +35,7 @@ const imageUploadMiddleware = async (req, res, next) => {
     await blobClient.uploadData(req.file.buffer, {
       blobHTTPHeaders: { blobContentType: req.file.mimetype },
     });
-    console.log("Image uploaded to Azure Blob Storage:", blobClient.url);
+    console.log('Image uploaded to Azure Blob Storage:', blobClient.url);
 
     // Generate CloudFront URL
     const azureBlobUrl = `${blobClient.url}?${AZURE_SAS_TOKEN_IMAGE}`;
@@ -50,7 +50,11 @@ const imageUploadMiddleware = async (req, res, next) => {
     // Generate optimized image versions
     const optimizedImages = await generateOptimizedVersions(req.file.buffer, req.file.originalname);
 
-    if (!optimizedImages.success || !optimizedImages.versions || optimizedImages.versions.length === 0) {
+    if (
+      !optimizedImages.success ||
+      !optimizedImages.versions ||
+      optimizedImages.versions.length === 0
+    ) {
       return res.status(500).json({ error: 'Image optimization failed' });
     }
 
@@ -58,7 +62,7 @@ const imageUploadMiddleware = async (req, res, next) => {
     req.optimizedImages = [
       { url: cloudfrontUrl },
       { url: azureBlobUrl },
-      ...optimizedImages.versions.map(img => {
+      ...optimizedImages.versions.map((img) => {
         const filePath = path.basename(img.path);
         const url = `https://${CLOUDFRONT_URL}/${filePath}`;
         return {

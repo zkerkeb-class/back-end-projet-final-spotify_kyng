@@ -1,13 +1,33 @@
 const express = require('express');
-const { createTrack, getAllTrack, getTrackById, updatedTrack, deleteTrack, getTracksByArtist, getTracksByAlbum, getTracksByGenre, getTracksByYear, streamTrack, getTrackByTitle, getTop10TracksByReleaseDate, advancedFilter } = require('../controllers/track.controller');
-const audioMiddleware = require('../cdn/middlewares/audioMiddleware'); 
+const {
+  createTrack,
+  getAllTrack,
+  getTrackById,
+  updatedTrack,
+  deleteTrack,
+  getTracksByArtist,
+  getTracksByAlbum,
+  getTracksByGenre,
+  getTracksByYear,
+  streamTrack,
+  getTrackByTitle,
+  getTop10TracksByReleaseDate,
+  advancedFilter,
+} = require('../controllers/track.controller');
+const audioMiddleware = require('../cdn/middlewares/audioMiddleware');
 const checkPermission = require('../middlewares/rbacMiddleware');
 const authMiddleware = require('../middlewares/authMiddleware');
 const router = express.Router();
 
 router.get('/filter', advancedFilter);
 
-router.post('/:albumId',authMiddleware,checkPermission(['upload_music']), audioMiddleware, createTrack);
+router.post(
+  '/:albumId',
+  authMiddleware,
+  checkPermission(['upload_music']),
+  audioMiddleware,
+  createTrack
+);
 
 // Route for getting all tracks
 router.get('/', getAllTrack);
@@ -19,10 +39,10 @@ router.get('/:id', getTrackById);
 router.get('/title/:title', getTrackByTitle);
 
 // Route for updating a track
-router.patch('/:id',authMiddleware,checkPermission(['edit_metadata']), updatedTrack);
+router.patch('/:id', authMiddleware, checkPermission(['edit_metadata']), updatedTrack);
 
 // Route for deleting a track
-router.delete('/:id', authMiddleware,checkPermission(['delete_music']), deleteTrack);
+router.delete('/:id', authMiddleware, checkPermission(['delete_music']), deleteTrack);
 
 // Route for getting tracks by artist
 router.get('/artist/:artistId', getTracksByArtist);
@@ -40,8 +60,5 @@ router.get('/top/10-recent-tracks', getTop10TracksByReleaseDate);
 //test
 router.get('/stream/:filename', streamTrack); // Working http://localhost:8000/api/track/stream/audio-1734824388016-files-1734824380508-732747547.m4a
 //fin
-
-
-
 
 module.exports = router;

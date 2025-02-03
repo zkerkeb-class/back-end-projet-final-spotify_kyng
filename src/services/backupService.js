@@ -79,17 +79,16 @@ const compressBackup = async (backupPath) => {
  * @param {string} message - Le message à envoyer
  */
 const sendNotification = async (topic, message) => {
-
   try {
     await axios.post(topic, message, {
       headers: {
-        'Title': 'Sauvegarde MongoDB', // Titre de la notification
-        'Priority': 'default',        // Priorité (default, high, urgent, etc.)
+        Title: 'Sauvegarde MongoDB', // Titre de la notification
+        Priority: 'default', // Priorité (default, high, urgent, etc.)
       },
     });
     console.log('Notification envoyée avec succès à ntfy.sh');
   } catch (error) {
-    console.error('Erreur lors de l\'envoi de la notification à ntfy.sh:', error);
+    console.error("Erreur lors de l'envoi de la notification à ntfy.sh:", error);
   }
 };
 
@@ -99,8 +98,12 @@ const sendNotification = async (topic, message) => {
  */
 const uploadToAzure = async (tarPath) => {
   try {
-    const blobServiceClient = BlobServiceClient.fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING);
-    const containerClient = blobServiceClient.getContainerClient(process.env.AZURE_CONTAINER_NAME_BACKUP);
+    const blobServiceClient = BlobServiceClient.fromConnectionString(
+      process.env.AZURE_STORAGE_CONNECTION_STRING
+    );
+    const containerClient = blobServiceClient.getContainerClient(
+      process.env.AZURE_CONTAINER_NAME_BACKUP
+    );
     const blobName = path.basename(tarPath);
     const blockBlobClient = containerClient.getBlockBlobClient(blobName);
 
@@ -111,7 +114,7 @@ const uploadToAzure = async (tarPath) => {
     fs.unlinkSync(tarPath);
     console.log(`Fichier local supprimé: ${tarPath}`);
   } catch (error) {
-    console.error('Erreur lors de l\'upload sur Azure:', error);
+    console.error("Erreur lors de l'upload sur Azure:", error);
     throw error;
   }
 };
@@ -121,8 +124,12 @@ const uploadToAzure = async (tarPath) => {
  */
 const cleanupOldBackupsOnAzure = async () => {
   try {
-    const blobServiceClient = BlobServiceClient.fromConnectionString(process.env.AZURE_STORAGE_CONNECTION_STRING);
-    const containerClient = blobServiceClient.getContainerClient(process.env.AZURE_CONTAINER_NAME_BACKUP);
+    const blobServiceClient = BlobServiceClient.fromConnectionString(
+      process.env.AZURE_STORAGE_CONNECTION_STRING
+    );
+    const containerClient = blobServiceClient.getContainerClient(
+      process.env.AZURE_CONTAINER_NAME_BACKUP
+    );
 
     // Lister tous les blobs dans le conteneur
     const blobs = [];
