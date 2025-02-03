@@ -7,7 +7,7 @@ const authMiddleware = async (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
 
   if (!token) {
-    console.log('No token provided in the request headers');
+    console.log("No token provided in the request headers");
     return res.status(403).json({ message: 'Access denied, no token provided.' });
   }
 
@@ -18,7 +18,7 @@ const authMiddleware = async (req, res, next) => {
     }
 
     const cachedSession = await sessionCacheService.getSession(token);
-    console.log('Cached session:', cachedSession);
+    console.log("Cached session:", cachedSession);
 
     if (cachedSession) {
       req.user = cachedSession; 
@@ -31,13 +31,13 @@ const authMiddleware = async (req, res, next) => {
     console.log("JWT decoded:", decoded);
     const sessionData = { id: decoded.id, email: decoded.email, role: decoded.role };
 
-    console.log('Creating new session in cache:', sessionData);
+    console.log("Creating new session in cache:", sessionData);
     await sessionCacheService.setSession(token, sessionData);
 
     req.user = sessionData; 
     next();
   } catch (err) {
-    console.error('Error in authMiddleware:', err.message);
+    console.error("Error in authMiddleware:", err.message);
     return res.status(400).json({ message: 'Invalid token.' });
   }
 };

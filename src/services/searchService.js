@@ -41,7 +41,7 @@ const search = async (query, page = 1, limit = 10) => {
   try {
     const searchTerms = normalizeSearchTerms(value.query);
     const results = await Promise.all([
-      searchTracks(searchTerms),
+      searchTracks(searchTerms, value.query),
       searchArtists(searchTerms),
       searchAlbums(searchTerms),
       searchLyrics(searchTerms),
@@ -95,22 +95,28 @@ const searchArtists = async (searchTerms) => {
   }));
 };
 
-const searchTracks = async (searchTerms) => {
+const searchTracks = async (searchTerms, originalQuery) => {
   logger.info('Searching tracks...');
-  const tracks = await Track.find()
-    .populate({
-      path: 'artistId',
-      match: buildArtistMatchQuery(searchTerms),
-    })
-    .populate('albumId');
+  
+  const tracks = await Track.find({
+    $or: [
+      { title: { $regex: `^${originalQuery}$`, $options: 'i' } },  // Exact match
+      { title: { $regex: originalQuery, $options: 'i' } },        // Contains query
+      { title: { $regex: buildLooseSearchPattern(searchTerms), $options: 'i' } }  // Loose match
+    ]
+  }).populate('artistId albumId');
 
-  return tracks
-    .filter((track) => track.artistId)
-    .map((track) => ({
-      type: 'track',
-      data: track,
-      score: calculateTrackScore(track, searchTerms),
-    }));
+  return tracks.map((track) => ({
+    type: 'track',
+    data: track,
+    score: track.title.toLowerCase() === originalQuery.toLowerCase() 
+      ? SCORE_WEIGHTS.EXACT_MATCH 
+      : calculateTrackScore(track, searchTerms),
+  }));
+};
+
+const buildLooseSearchPattern = (terms) => {
+  return terms.map((term) => `(?=.*${term})`).join('');
 };
 
 const searchAlbums = async (searchTerms) => {
