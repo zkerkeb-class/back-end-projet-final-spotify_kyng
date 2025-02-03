@@ -1,11 +1,7 @@
 const trackService = require('../services/trackService');
 const logger = require('../utils/logger');
-const { getBlobStream } = require('../utils/azureBlobHelper');
-const multer = require('multer');
-const { ObjectId } = require('mongodb');
 const { faker } = require('@faker-js/faker');
 const { extractAudioMetadata } = require('../utils/metadataExtractor');
-const upload = multer({ dest: 'uploads/' });
 
 const createTrack = async (req, res) => {
   try {
@@ -20,9 +16,9 @@ const createTrack = async (req, res) => {
     let metadata = {};
     try {
       metadata = await extractAudioMetadata(convertedPath);
-      console.log('tt° : ', metadata);
+      logger.info('tt° : ', metadata);
     } catch (metadataError) {
-      console.warn('Metadata extraction failed, generating fake data');
+      logger.warn('Metadata extraction failed, generating fake data');
     }
 
     const trackData = {
@@ -54,7 +50,7 @@ const createTrack = async (req, res) => {
 
     res.status(201).json(track);
   } catch (error) {
-    console.error(`Error in createTrack: ${error.message}`);
+    logger.error(`Error in createTrack: ${error.message}`);
     res.status(400).json({ error: error.message });
   }
 };
@@ -123,7 +119,7 @@ const updatedTrack = async (req, res) => {
     const updatedData = req.body;
     if (req.uploadedFiles && req.uploadedFiles.length > 0) {
       updatedData.audioFiles = req.uploadedFiles.map((file) => ({
-        path: file.convertedPath, 
+        path: file.convertedPath,
         originalName: file.originalName,
         size: file.size,
         mimetype: file.mimetype,
@@ -242,9 +238,13 @@ const streamTrack = async (req, res) => {
     logger.info(`Streaming file ${filename} successfully.`);
   } catch (error) {
     logger.error(`Error streaming track: ${error.message}`);
-    res.status(error.message === 'Track not found.' || error.message === 'File not found.' ? 404 : 500).json({ error: error.message });
+    res
+      .status(
+        error.message === 'Track not found.' || error.message === 'File not found.' ? 404 : 500
+      )
+      .json({ error: error.message });
   }
-}
+};
 
 const getTop10TracksByReleaseDate = async (req, res) => {
   const result = await trackService.getTop10TracksByReleaseDate();
@@ -296,7 +296,7 @@ const advancedFilter = async (req, res) => {
 
     return res.status(200).json(result);
   } catch (error) {
-    logger.error(`Error in advanced filter : ${result.message}`);
+    logger.error(`Error in advanced filter : ${error.message}`);
     return res
       .status(500)
       .json({ message: 'Error fetching filtered tracks', error: error.message });

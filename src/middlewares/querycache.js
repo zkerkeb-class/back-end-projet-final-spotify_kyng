@@ -1,4 +1,5 @@
 const redisClient = require('../config/redis');
+const logger = require('../utils/logger');
 const excludedRoutes = ['/auth/login'];
 
 const querycacheMiddleware = async (req, res, next) => {
@@ -12,11 +13,8 @@ const querycacheMiddleware = async (req, res, next) => {
     const cachedData = await redisClient.get(key);
 
     if (cachedData) {
-      console.log('Cache hit');
       return res.json(JSON.parse(cachedData));
     }
-
-    console.log('Cache miss');
 
     res.sendResponse = res.json;
     res.json = (body) => {
@@ -26,7 +24,7 @@ const querycacheMiddleware = async (req, res, next) => {
 
     next();
   } catch (error) {
-    console.error('Redis cache error:', error);
+    logger.error('Redis cache error:', error);
     next();
   }
 };

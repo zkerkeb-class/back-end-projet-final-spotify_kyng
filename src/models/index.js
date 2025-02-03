@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const mongoose = require('mongoose');
 const process = require('process');
+const logger = require('../utils/logger');
 
 const basename = path.basename(__filename);
 const env = process.env.NODE_ENV || 'development';
@@ -17,10 +18,10 @@ const connectDB = async () => {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
-    console.log(`MongoDB connected successfully to ${mongoURI}`);
+    logger.info(`MongoDB connected successfully to ${mongoURI}`);
   } catch (err) {
-    console.error('MongoDB connection error:', err);
-    process.exit(1); 
+    logger.error('MongoDB connection error:', err);
+    process.exit(1);
   }
 };
 
@@ -35,8 +36,8 @@ const modelFiles = fs.readdirSync(__dirname).filter((file) => {
 
 modelFiles.forEach((file) => {
   const modelPath = path.join(__dirname, file);
-  const model = require(modelPath)(mongoose); 
-  db[model.modelName] = model; 
+  const model = require(modelPath)(mongoose);
+  db[model.modelName] = model;
 });
 
 db.mongoose = mongoose;

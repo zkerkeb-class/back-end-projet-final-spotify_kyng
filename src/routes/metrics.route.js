@@ -3,7 +3,7 @@ const {
   getServerMetrics,
   trackBandwidth,
   trackSuccessFailure,
-  resetMetrics
+  resetMetrics,
 } = require('../services/monitoringService');
 const checkPermission = require('../middlewares/rbacMiddleware');
 const authMiddleware = require('../middlewares/authMiddleware');
@@ -15,9 +15,11 @@ const metrics = {
   responseTime: 0,
 };
 
-router.use(responseTime((req, res, time) => {
-  metrics.responseTime = time; 
-}));
+router.use(
+  responseTime((req, res, time) => {
+    metrics.responseTime = time;
+  })
+);
 
 router.use(trackBandwidth);
 router.use(trackSuccessFailure);
@@ -29,7 +31,7 @@ router.get('/', authMiddleware, checkPermission(['view_statistics']), (req, res)
 
 router.post('/reset', (req, res) => {
   resetMetrics();
-  metrics.responseTime = 0; 
+  metrics.responseTime = 0;
   res.json({ message: 'Métriques réinitialisées avec succès' });
 });
 

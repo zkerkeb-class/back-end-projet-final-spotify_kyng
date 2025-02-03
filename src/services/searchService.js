@@ -97,21 +97,22 @@ const searchArtists = async (searchTerms) => {
 
 const searchTracks = async (searchTerms, originalQuery) => {
   logger.info('Searching tracks...');
-  
+
   const tracks = await Track.find({
     $or: [
-      { title: { $regex: `^${originalQuery}$`, $options: 'i' } },  // Exact match
-      { title: { $regex: originalQuery, $options: 'i' } },        // Contains query
-      { title: { $regex: buildLooseSearchPattern(searchTerms), $options: 'i' } }  // Loose match
-    ]
+      { title: { $regex: `^${originalQuery}$`, $options: 'i' } }, // Exact match
+      { title: { $regex: originalQuery, $options: 'i' } }, // Contains query
+      { title: { $regex: buildLooseSearchPattern(searchTerms), $options: 'i' } }, // Loose match
+    ],
   }).populate('artistId albumId');
 
   return tracks.map((track) => ({
     type: 'track',
     data: track,
-    score: track.title.toLowerCase() === originalQuery.toLowerCase() 
-      ? SCORE_WEIGHTS.EXACT_MATCH 
-      : calculateTrackScore(track, searchTerms),
+    score:
+      track.title.toLowerCase() === originalQuery.toLowerCase()
+        ? SCORE_WEIGHTS.EXACT_MATCH
+        : calculateTrackScore(track, searchTerms),
   }));
 };
 
@@ -287,28 +288,6 @@ const rankResults = (results) => {
     });
 };
 
-const findSimilarTracks = async (trackId) => {
-  const sourceTrack = await Track.findById(trackId).populate('artistId');
-  if (!sourceTrack) return [];
-
-  const similarTracks = await Track.find({
-    _id: { $ne: trackId },
-    $or: [
-      { genres: { $in: sourceTrack.genres } },
-      { 'artistId.genres': { $in: sourceTrack.artistId.genres } },
-      { mood: sourceTrack.mood },
-      { tempo: { $gte: sourceTrack.tempo - 10, $lte: sourceTrack.tempo + 10 } },
-    ],
-  }).populate('artistId albumId');
-
-  return similarTracks
-    .map((track) => ({
-      track,
-      similarity: calculateSimilarityScore(sourceTrack, track),
-    }))
-    .sort((a, b) => b.similarity - a.similarity);
-};
-
 const searchLyrics = async (searchTerms) => {
   logger.info('Searching lyrics...');
   const tracks = await Track.find({
@@ -331,20 +310,6 @@ const calculateLyricsScore = (track, searchTerms) => {
       if (lyrics?.includes(variant)) score += SCORE_WEIGHTS.LYRICS_MATCH;
     });
   });
-
-  return score;
-};
-const calculateSimilarityScore = (sourceTrack, targetTrack) => {
-  let score = 0;
-
-  const genreOverlap = sourceTrack.genres.filter((g) => targetTrack.genres.includes(g)).length;
-  score += genreOverlap * SCORE_WEIGHTS.GENRE_OVERLAP;
-
-  const tempoDiff = Math.abs(sourceTrack.tempo - targetTrack.tempo);
-  if (tempoDiff <= 5) score += SCORE_WEIGHTS.TEMPO_MATCH;
-  else if (tempoDiff <= 10) score += SCORE_WEIGHTS.TEMPO_MATCH - 10;
-
-  if (sourceTrack.mood === targetTrack.mood) score += SCORE_WEIGHTS.MOOD_MATCH;
 
   return score;
 };

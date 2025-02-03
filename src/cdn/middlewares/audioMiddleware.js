@@ -1,10 +1,11 @@
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
-const ffmpegPath = require('ffmpeg-static'); 
+const ffmpegPath = require('ffmpeg-static');
 const ffmpeg = require('fluent-ffmpeg');
+const logger = require('../../utils/logger');
 
-ffmpeg.setFfmpegPath(ffmpegPath); 
+ffmpeg.setFfmpegPath(ffmpegPath);
 
 // Define the upload directory paths
 const uploadDir = path.join(__dirname, '..', 'uploads');
@@ -49,17 +50,15 @@ const upload = multer({
 
 // Middleware to handle audio uploads and convert to m4a
 const audioMiddleware = (req, res, next) => {
-  console.log('IN: ', req.files);
-
   upload.array('files', 10)(req, res, async (err) => {
     if (err instanceof multer.MulterError) {
-      console.error('Multer error:', err.message);
+      logger.error('Multer error:', err.message);
       return res.status(400).json({
         error: 'Upload error',
         details: err.message,
       });
     } else if (err) {
-      console.error('Server error during file upload:', err.message);
+      logger.error('Server error during file upload:', err.message);
       return res.status(500).json({
         error: 'Server error',
         details: err.message,
@@ -68,7 +67,7 @@ const audioMiddleware = (req, res, next) => {
 
     // If no files are uploaded, proceed to the next middleware/controller
     if (!req.files || req.files.length === 0) {
-      console.log('No files uploaded, proceeding without audio updates');
+      logger.info('No files uploaded, proceeding without audio updates');
       return next();
     }
 
@@ -81,19 +80,17 @@ const audioMiddleware = (req, res, next) => {
       mimetype: file.mimetype,
     }));
 
-    console.log('Files uploaded successfully:', req.uploadedFiles);
-
     // Convert uploaded files to m4a format
     try {
       for (const file of req.uploadedFiles) {
         const convertedPath = await convertToM4a(file.path, optimizedDir);
-        file.convertedPath = convertedPath; 
+        file.convertedPath = convertedPath;
       }
 
-      console.log('Files converted to m4a format successfully');
-      next(); 
+      logger.info('Files converted to m4a format successfully');
+      next();
     } catch (conversionError) {
-      console.error('Error during audio conversion:', conversionError.message);
+      logger.error('Error during audio conversion:', conversionError.message);
       return res.status(500).json({
         error: 'Audio conversion failed',
         details: conversionError.message,
@@ -114,11 +111,11 @@ async function convertToM4a(inputPath, outputDir) {
       .audioFrequency(44100)
       .audioChannels(2)
       .on('end', () => {
-        console.log(`Converted file saved to ${outputFilePath}`);
+        logger.info(`Converted file saved to ${outputFilePath}`);
         resolve(outputFilePath);
       })
       .on('error', (err) => {
-        console.error('Error during audio conversion:', err.message);
+        logger.error('Error during audio conversion:', err.message);
         reject(err);
       })
       .save(outputFilePath);

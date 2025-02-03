@@ -1,4 +1,5 @@
 const { BlobServiceClient } = require('@azure/storage-blob');
+const logger = require('./logger');
 
 const blobServiceClient = BlobServiceClient.fromConnectionString(
   process.env.AZURE_STORAGE_CONNECTION_STRING
@@ -11,7 +12,6 @@ const getBlobStream = async (containerName, filename) => {
 
     // Check if the blob exists
     const exists = await blobClient.exists();
-    console.log('o : ', exists);
 
     if (!exists) {
       return null;
@@ -21,7 +21,7 @@ const getBlobStream = async (containerName, filename) => {
     const downloadResponse = await blobClient.download();
     return downloadResponse.readableStreamBody;
   } catch (error) {
-    console.error(`Error retrieving blob: ${error.message}`);
+    logger.error(`Error retrieving blob: ${error.message}`);
     throw error;
   }
 };

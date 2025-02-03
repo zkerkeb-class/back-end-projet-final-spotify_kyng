@@ -1,6 +1,7 @@
 const authService = require('../services/authService');
 const sessionCacheService = require('../services/sessionCacheService');
 const jwt = require('jsonwebtoken');
+const logger = require('../utils/logger');
 
 const loginController = async (req, res) => {
   const { email, password } = req.body;
@@ -8,11 +9,11 @@ const loginController = async (req, res) => {
     const token = await authService.loginUser(email, password);
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const sessionData = { id: decoded.id, email: decoded.email, role: decoded.role };
-    console.log('Calling setSession with token:', token, 'and data:', sessionData);
+    logger.info('Calling setSession with token:', token, 'and data:', sessionData);
     await sessionCacheService.setSession(token, sessionData);
     res.status(200).json({ token });
   } catch (error) {
-    console.error('Erreur lors du login:', error.message);
+    logger.error('Erreur lors du login:', error.message);
     res.status(400).json({ message: error.message });
   }
 };
@@ -30,11 +31,10 @@ const logoutController = async (req, res) => {
 
     res.status(200).json({ message: 'Déconnexion réussie.' });
   } catch (error) {
-    console.error('Erreur lors de la déconnexion:', error.message);
+    logger.error('Erreur lors de la déconnexion:', error.message);
     res.status(500).json({ message: 'Erreur interne lors de la déconnexion.' });
   }
 };
-
 
 module.exports = {
   loginController,

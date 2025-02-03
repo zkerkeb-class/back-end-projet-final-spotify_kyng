@@ -7,7 +7,7 @@ const { BlobServiceClient } = require('@azure/storage-blob');
 const tar = require('tar');
 const os = require('os');
 const { v4: uuidv4 } = require('uuid');
-const schedule = require('node-schedule');
+const logger = require('../utils/logger');
 
 /**
  * Sauvegarde la base de données MongoDB
@@ -25,8 +25,6 @@ const backupDatabase = async () => {
 
   try {
     await client.connect();
-    console.log('Connected to MongoDB');
-
     const db = client.db(); // Get the default database
     const collections = await db.listCollections().toArray();
 
@@ -39,13 +37,13 @@ const backupDatabase = async () => {
       const filePath = path.join(backupPath, `${collectionName}.json`);
       fs.writeFileSync(filePath, JSON.stringify(documents, null, 2));
 
-      console.log(`Exported collection ${collectionName} to ${filePath}`);
+      logger.info(`Exported collection ${collectionName} to ${filePath}`);
     }
 
-    console.log('Sauvegarde réussie');
+    logger.info('Sauvegarde réussie');
     return backupPath;
   } catch (err) {
-    console.error('Erreur lors de la sauvegarde:', err);
+    logger.error('Erreur lors de la sauvegarde:', err);
     throw err;
   } finally {
     await client.close();
@@ -86,9 +84,9 @@ const sendNotification = async (topic, message) => {
         Priority: 'default', // Priorité (default, high, urgent, etc.)
       },
     });
-    console.log('Notification envoyée avec succès à ntfy.sh');
+    logger.info('Notification envoyée avec succès à ntfy.sh');
   } catch (error) {
-    console.error("Erreur lors de l'envoi de la notification à ntfy.sh:", error);
+    logger.error("Erreur lors de l'envoi de la notification à ntfy.sh:", error);
   }
 };
 
@@ -108,13 +106,13 @@ const uploadToAzure = async (tarPath) => {
     const blockBlobClient = containerClient.getBlockBlobClient(blobName);
 
     await blockBlobClient.uploadFile(tarPath);
-    console.log(`Sauvegarde uploadée sur Azure Blob Storage: ${blobName}`);
+    logger.info(`Sauvegarde uploadée sur Azure Blob Storage: ${blobName}`);
 
     // Delete the local tar file after upload
     fs.unlinkSync(tarPath);
-    console.log(`Fichier local supprimé: ${tarPath}`);
+    logger.info(`Fichier local supprimé: ${tarPath}`);
   } catch (error) {
-    console.error("Erreur lors de l'upload sur Azure:", error);
+    logger.error("Erreur lors de l'upload sur Azure:", error);
     throw error;
   }
 };
@@ -185,13 +183,13 @@ const cleanupOldBackupsOnAzure = async () => {
       if (!isDailyBackup && !isWeeklyBackup) {
         const blobClient = containerClient.getBlobClient(blob.name);
         await blobClient.delete();
-        console.log(`Sauvegarde supprimée sur Azure: ${blob.name}`);
+        logger.info(`Sauvegarde supprimée sur Azure: ${blob.name}`);
       }
     }
 
-    console.log('Nettoyage des sauvegardes sur Azure terminé avec succès.');
+    logger.info('Nettoyage des sauvegardes sur Azure terminé avec succès.');
   } catch (error) {
-    console.error('Erreur lors du nettoyage des sauvegardes sur Azure:', error);
+    logger.error('Erreur lors du nettoyage des sauvegardes sur Azure:', error);
     throw error;
   }
 };
@@ -215,18 +213,16 @@ const runBackup = async (config) => {
 
     // Étape 4 : Supprimer le dossier de sauvegarde temporaire
     fs.rmdirSync(path.dirname(backupPath), { recursive: true });
-    console.log(`Dossier de sauvegarde temporaire supprimé: ${path.dirname(backupPath)}`);
 
     // Étape 5 : Appliquer la politique de rotation des sauvegardes
     await cleanupOldBackupsOnAzure();
 
-    console.log('eeee : ', notificationUrl);
     // Étape 6 : Envoyer une notification de succès via ntfy.sh
     if (notificationUrl) {
       await sendNotification(notificationUrl, 'Sauvegarde réussie ✅');
     }
   } catch (error) {
-    console.error('Erreur lors de la sauvegarde:', error);
+    logger.error('Erreur lors de la sauvegarde:', error);
 
     // Étape 7 : Envoyer une notification d'échec via ntfy.sh
     if (notificationUrl) {

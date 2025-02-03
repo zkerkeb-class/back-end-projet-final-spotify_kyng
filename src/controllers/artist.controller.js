@@ -7,8 +7,6 @@ const createArtist = async (req, res) => {
       throw new Error('No optimized images found.');
     }
 
-    const mainImage = req.optimizedImages[0].url;
-
     const artistData = {
       name: req.body.name,
       genres: req.body.genres,
@@ -29,7 +27,7 @@ const createArtist = async (req, res) => {
 
 const getAllArtist = async (req, res) => {
   try {
-    const { page = 1, limit = 10 } = req.query; 
+    const { page = 1, limit = 10 } = req.query;
     const parsedPage = parseInt(page, 10);
     const parsedLimit = parseInt(limit, 10);
     const artists = await artistService.getAllArtist(parsedPage, parsedLimit);

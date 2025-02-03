@@ -3,6 +3,7 @@ const fs = require('fs').promises;
 const path = require('path');
 const { exec } = require('child_process');
 const mongoose = require('mongoose');
+const logger = require('../utils/logger');
 const Artist = require('../models/Artist')(mongoose);
 const Album = require('../models/Album')(mongoose);
 const Track = require('../models/Track')(mongoose);
@@ -20,7 +21,7 @@ const generateAudioFile = (trackTitle) => {
         const command = `ffmpeg -f lavfi -i sine=frequency=440:duration=30 -c:a libmp3lame -b:a 128k ${filepath}`;
         exec(command, (error) => {
           if (error) {
-            console.error('Audio generation error:', error);
+            logger.error('Audio generation error:', error);
             reject(error);
             return;
           }
@@ -64,8 +65,8 @@ const generateSingleMp3Metadata = async () => {
       title: faker.music.songName(),
       artistId: artist.id,
       albumId: album.id,
-      duration: faker.number.int({ min: 120, max: 300 }), 
-      audioLink: audioLink, 
+      duration: faker.number.int({ min: 120, max: 300 }),
+      audioLink: audioLink,
       isExplicit: faker.datatype.boolean({ probability: 0.2 }),
       trackNumber: faker.number.int({ min: 1, max: 12 }),
       numberOfListens: faker.number.int({ min: 0, max: 1000000 }),
@@ -74,7 +75,7 @@ const generateSingleMp3Metadata = async () => {
 
     return { artist, album, track };
   } catch (error) {
-    console.error('Error generating MP3 metadata:', error);
+    logger.error('Error generating MP3 metadata:', error);
     throw error;
   }
 };
@@ -100,7 +101,6 @@ const generateMp3MetadataController = async (req, res) => {
     });
   }
 };
-
 
 const bulkGenerateMp3MetadataController = async (req, res) => {
   try {
@@ -128,7 +128,7 @@ const generateMultipleMp3Metadatas = async (count) => {
       const entry = await generateSingleMp3Metadata();
       generated.push(entry);
     } catch (error) {
-      console.error(`Error generating MP3 metadata #${i + 1}:`, error);
+      logger.error(`Error generating MP3 metadata #${i + 1}:`, error);
     }
   }
 

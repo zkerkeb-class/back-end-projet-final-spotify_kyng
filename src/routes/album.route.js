@@ -6,8 +6,15 @@ const { imageUploadMiddleware, upload } = require('../cdn/middlewares/imageUploa
 const checkPermission = require('../middlewares/rbacMiddleware');
 const authMiddleware = require('../middlewares/authMiddleware');
 
-router.post('/:artistId',authMiddleware,checkPermission(['upload_music']), upload.single('image'), imageUploadMiddleware, albumController.createAlbum);
-router.get('/',albumController.getAllAlbum);
+router.post(
+  '/:artistId',
+  authMiddleware,
+  checkPermission(['upload_music']),
+  upload.single('image'),
+  imageUploadMiddleware,
+  albumController.createAlbum
+);
+router.get('/', albumController.getAllAlbum);
 router.get('/:id', albumController.getAlbumById);
 router.get('/title/:title', albumController.getAlbumByTitle);
 

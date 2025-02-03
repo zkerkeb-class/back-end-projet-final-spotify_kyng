@@ -129,5 +129,5 @@ module.exports = {
   deletePlaylist,
   addTrackToPlaylist,
   getLastPlayedPlaylist,
-  getMostPlayedPlaylist
+  getMostPlayedPlaylist,
 };

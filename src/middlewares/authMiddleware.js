@@ -1,13 +1,12 @@
 const jwt = require('jsonwebtoken');
 const sessionCacheService = require('../services/sessionCacheService');
-const User = require('../models/user')(require('mongoose'));
-
+const logger = require('../utils/logger');
 
 const authMiddleware = async (req, res, next) => {
   const token = req.headers.authorization?.split(' ')[1];
 
   if (!token) {
-    console.log("No token provided in the request headers");
+    logger.info('No token provided in the request headers');
     return res.status(403).json({ message: 'Access denied, no token provided.' });
   }
 
@@ -18,26 +17,25 @@ const authMiddleware = async (req, res, next) => {
     }
 
     const cachedSession = await sessionCacheService.getSession(token);
-    console.log("Cached session:", cachedSession);
+    logger.info('Cached session:', cachedSession);
 
     if (cachedSession) {
-      req.user = cachedSession; 
-      console.log("Session found in cache, proceeding to the next middleware");
+      req.user = cachedSession;
+      logger.info('Session found in cache, proceeding to the next middleware');
       return next();
     }
-    console.log("Session not found in cache, verifying JWT");
+    logger.info('Session not found in cache, verifying JWT');
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-    console.log("JWT decoded:", decoded);
     const sessionData = { id: decoded.id, email: decoded.email, role: decoded.role };
 
-    console.log("Creating new session in cache:", sessionData);
+    logger.info('Creating new session in cache:', sessionData);
     await sessionCacheService.setSession(token, sessionData);
 
-    req.user = sessionData; 
+    req.user = sessionData;
     next();
   } catch (err) {
-    console.error("Error in authMiddleware:", err.message);
+    logger.error('Error in authMiddleware:', err.message);
     return res.status(400).json({ message: 'Invalid token.' });
   }
 };

@@ -2,6 +2,7 @@ const os = require('os');
 const mongoose = require('mongoose');
 const { execSync } = require('child_process');
 const Redis = require('ioredis');
+const logger = require('../utils/logger');
 
 // Objet global pour stocker les métriques
 const metrics = {
@@ -28,7 +29,7 @@ const trackBandwidth = (req, res, next) => {
 
   res.on('finish', () => {
     metrics.dataTransferred += requestSize;
-    console.log(`Bande passante utilisée : ${metrics.dataTransferred} octets`);
+    logger.info(`Bande passante utilisée : ${metrics.dataTransferred} octets`);
   });
 
   next();
@@ -42,24 +43,8 @@ const trackSuccessFailure = (req, res, next) => {
     } else {
       metrics.failureCount++;
     }
-    console.log(`Succès : ${metrics.successCount}, Échecs : ${metrics.failureCount}`);
+    logger.info(`Succès : ${metrics.successCount}, Échecs : ${metrics.failureCount}`);
   });
-  next();
-};
-
-// Middleware pour mesurer le temps de réponse des requêtes API
-const measureResponseTime = (req, res, next) => {
-  const startTime = process.hrtime(); // Temps de départ en nanosecondes
-
-  res.on('finish', () => {
-    const duration = process.hrtime(startTime); // Temps écoulé en [secondes, nanosecondes]
-    const responseTimeMs = duration[0] * 1000 + duration[1] / 1000000; // Convertir en millisecondes
-    req.responseTime = responseTimeMs; // Stocker le temps de réponse dans req
-    console.log(
-      `Requête ${req.method} ${req.url} - Temps de réponse : ${responseTimeMs.toFixed(2)} ms`
-    );
-  });
-
   next();
 };
 
@@ -70,18 +55,18 @@ const measureRedisLatency = async () => {
   await redisClient.ping(); // Exemple de commande Redis
   const latency = Date.now() - startTime;
   metrics.redisLatency = latency;
-  console.log(`Latence Redis : ${latency} ms`);
+  logger.info(`Latence Redis : ${latency} ms`);
   return latency;
 };
 
 // Fonction pour mesurer le temps de traitement des médias
-const measureMediaProcessingTime = async (file) => {
+const measureMediaProcessingTime = async () => {
   const startTime = Date.now();
   // Simuler un traitement de média
   await new Promise((resolve) => setTimeout(resolve, 1000));
   const processingTime = Date.now() - startTime;
   metrics.mediaProcessingTime = processingTime;
-  console.log(`Temps de traitement des médias : ${processingTime} ms`);
+  logger.info(`Temps de traitement des médias : ${processingTime} ms`);
   return processingTime;
 };
 
@@ -103,7 +88,7 @@ const getServerMetrics = () => {
   try {
     diskUsage = execSync('df -h /').toString().trim(); // Utilisation du disque pour la racine
   } catch (error) {
-    console.error('Erreur récupération disque:', error);
+    logger.error('Erreur récupération disque:', error);
   }
 
   // Retour des métriques
@@ -131,7 +116,7 @@ const resetMetrics = () => {
   metrics.failureCount = 0;
   metrics.redisLatency = 0;
   metrics.mediaProcessingTime = 0;
-  console.log('Métriques réinitialisées');
+  logger.info('Métriques réinitialisées');
 };
 
 module.exports = {
@@ -139,7 +124,6 @@ module.exports = {
   trackBandwidth,
   trackSuccessFailure,
   resetMetrics,
- // measureResponseTime,
   measureRedisLatency,
   measureMediaProcessingTime,
 };

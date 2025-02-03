@@ -31,8 +31,8 @@ module.exports = (mongoose) => {
         ref: 'Artist',
       },
       collaborators: {
-        type: [String], 
-        default: []
+        type: [String],
+        default: [],
       },
       credits: {
         type: {
@@ -43,7 +43,7 @@ module.exports = (mongoose) => {
       },
       lastPlayed: {
         type: Date,
-        default: null
+        default: null,
       },
       numberOfListens: {
         type: Number,
@@ -56,13 +56,13 @@ module.exports = (mongoose) => {
       trackNumber: {
         type: Number,
       },
-      releaseYear: { 
-        type: Number, 
-        default: new Date().getFullYear() 
+      releaseYear: {
+        type: Number,
+        default: new Date().getFullYear(),
       },
     },
     {
-      timestamps: true, 
+      timestamps: true,
     }
   );
 

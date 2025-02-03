@@ -2,12 +2,7 @@ const mongoose = require('mongoose');
 const Playlist = require('../models/Playlist')(mongoose);
 const Joi = require('joi');
 const logger = require('../utils/logger');
-
-const Redis = require('ioredis');
 const Track = require('../models/Track')(mongoose);
-const redisUrl = process.env.REDIS_URL;
-
-// const redisClient = new Redis(redisUrl);
 
 const playlistSchema = Joi.object({
   pistes_audio: Joi.string().required(),
@@ -27,8 +22,6 @@ const createPlaylist = async (data) => {
 
     const playlist = await Playlist.create(value);
 
-    // ici invalider (delete) le cache du getAllPlaylist
-
     logger.info('Playlist created successfully.');
 
     return playlist;
@@ -40,15 +33,6 @@ const createPlaylist = async (data) => {
 
 const getAllPlaylists = async (page = 1, limit = 10) => {
   try {
-    const cacheKey = `playlists:page:${page}:limit:${limit}`;
-
-    // const cachedData = await redisClient.get(cacheKey);
-
-    // if (cachedData) {
-    //   logger.info(`Playlists retrieved from cache for page ${page}, limit ${limit}`);
-    //   return JSON.parse(cachedData);
-    // }
-
     const skip = (page - 1) * limit;
 
     const totalCount = await Playlist.countDocuments();
@@ -64,7 +48,6 @@ const getAllPlaylists = async (page = 1, limit = 10) => {
       },
     };
 
-    // redisClient.set(cacheKey, JSON.stringify(result), 'EX', 3600); // Cache for 1 hour
     logger.info(`Playlists retrieved from db for page ${page}, limit ${limit}`);
     return result;
   } catch (error) {
@@ -105,8 +88,6 @@ const updatedPlaylist = async (id, data) => {
 
     const updatedPlaylist = await Playlist.findByIdAndUpdate(id, value, { new: true });
 
-    // redisClient.del('playlists:all'); // Verifier le cache
-
     if (updatedPlaylist) {
       logger.info(`Playlist with ID ${id} updated successfully.`);
     }
@@ -125,8 +106,6 @@ const deletePlaylist = async (id) => {
     }
 
     const deletePlaylist = await Playlist.findByIdAndDelete(id);
-
-    // redisClient.del('playlists:all');
 
     if (deletePlaylist) {
       logger.info(`Playlist with ID ${id} deleted successfully.`);
@@ -152,7 +131,6 @@ const addTrackToPlaylist = async (playlistId, trackId) => {
       throw new Error('Playlist not found');
     }
 
-    // console.log('te : ', trackId)
     const trackIdObject = mongoose.Types.ObjectId.isValid(trackId)
       ? new mongoose.Types.ObjectId(trackId)
       : trackId;
@@ -181,8 +159,7 @@ const addTrackToPlaylist = async (playlistId, trackId) => {
 // Get the 20 most recently played tracks
 const getLastPlayedTracks = async () => {
   logger.info('Fetching last played tracks.');
-  return await Track
-    .find({ lastPlayed: { $ne: null } })
+  return await Track.find({ lastPlayed: { $ne: null } })
     .sort({ lastPlayed: -1 })
     .limit(20);
 };
@@ -190,10 +167,7 @@ const getLastPlayedTracks = async () => {
 // Get the 20 most played tracks
 const getMostPlayedTracks = async () => {
   logger.info('Fetching most played tracks.');
-  return await Track
-    .find({})
-    .sort({ numberOfListens: -1 })
-    .limit(20);
+  return await Track.find({}).sort({ numberOfListens: -1 }).limit(20);
 };
 
 module.exports = {
@@ -204,5 +178,5 @@ module.exports = {
   deletePlaylist,
   addTrackToPlaylist,
   getLastPlayedTracks,
-  getMostPlayedTracks
+  getMostPlayedTracks,
 };

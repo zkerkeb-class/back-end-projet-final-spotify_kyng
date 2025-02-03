@@ -6,7 +6,6 @@ const createAlbum = async (req, res) => {
     if (!req.optimizedImages || req.optimizedImages.length === 0) {
       throw new Error('No optimized images found.');
     }
-    const mainImage = req.optimizedImages[0].url;
 
     const albumData = {
       title: req.body.title,
@@ -115,7 +114,7 @@ const updatedAlbum = async (req, res) => {
     }
 
     if (!albumData.artistId) {
-      delete albumData.artistId; 
+      delete albumData.artistId;
     }
 
     const album = await albumService.updatedAlbum(req.params.id, albumData);
@@ -155,7 +154,7 @@ const deleteAlbum = async (req, res) => {
 
 const getAlbumsByArtist = async (req, res) => {
   try {
-    const { artistId } = req.params; 
+    const { artistId } = req.params;
     const { page = 1, limit = 10 } = req.query;
 
     const parsedPage = parseInt(page, 10);

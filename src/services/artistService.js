@@ -3,11 +3,7 @@ const Artist = require('../models/Artist')(mongoose);
 const Track = require('../models/Track')(mongoose);
 const Joi = require('joi');
 const logger = require('../utils/logger');
-const Redis = require('ioredis');
-const redisUrl = process.env.REDIS_URL;
 const { ObjectId } = require('mongodb');
-
-// const redisClient = new Redis(redisUrl);
 
 const artistSchema = Joi.object({
   name: Joi.string().optional().trim(),
@@ -43,8 +39,6 @@ const createArtist = async (data) => {
 
     const artist = await Artist.create(value);
 
-    // ici invalider (delete) le cache du getAllArtist
-
     logger.info('Artist created successfully.');
 
     return artist;
@@ -56,15 +50,6 @@ const createArtist = async (data) => {
 
 const getAllArtist = async (page = 1, limit = 10) => {
   try {
-    const cacheKey = `artists:page:${page}:limit:${limit}`; // Verifier si c'est bien ca
-
-    // const cachedData = await redisClient.get(cacheKey);
-
-    // if (cachedData) {
-    //   logger.info(`Artists retrieved from cache for page ${page}, limit ${limit}`);
-    //   return JSON.parse(cachedData);
-    // }
-
     const skip = (page - 1) * limit;
     const totalCount = await Artist.countDocuments();
 
@@ -80,7 +65,6 @@ const getAllArtist = async (page = 1, limit = 10) => {
       },
     };
 
-    // redisClient.set(cacheKey, JSON.stringify(result), 'EX', 3600); // Cache for 1 hour
     logger.info(`Artists retrieved from db for page ${page}, limit ${limit}`);
 
     return result;
@@ -149,8 +133,6 @@ const updatedArtist = async (id, data) => {
 
     const updatedArtist = await Artist.findByIdAndUpdate(id, value, { new: true });
 
-    // redisClient.del('artists:all'); // Verifier le cache
-
     if (updatedArtist) {
       logger.info(`Artist with ID ${id} updated successfully.`);
     }
@@ -170,8 +152,6 @@ const deleteArtist = async (id) => {
 
     const deleteArtist = await Artist.findByIdAndDelete(id);
 
-    // redisClient.del('artists:all');
-
     if (deleteArtist) {
       logger.info(`Artist with ID ${id} deleted successfully.`);
     }
@@ -185,19 +165,9 @@ const deleteArtist = async (id) => {
 
 const getArtistsByGenre = async (genre, page = 1, limit = 10) => {
   try {
-    const cacheKey = `artists:genre:${genre}:page:${page}:limit:${limit}`;
-    // const cachedData = await redisClient.get(cacheKey);
-
-    // if (cachedData) {
-    //   logger.info(`Artists for genre ${genre} retrieved from cache.`);
-    //   return JSON.parse(cachedData);
-    // }
-
     const skip = (page - 1) * limit;
 
     const artists = await Artist.find({ genres: genre }).skip(skip).limit(limit);
-    const artists2 = await Artist.find({ genres: genre });
-    console.log('tt : ', genre);
 
     const totalCount = await Artist.countDocuments({ genres: genre });
 
@@ -211,7 +181,6 @@ const getArtistsByGenre = async (genre, page = 1, limit = 10) => {
       },
     };
 
-    // redisClient.set(cacheKey, JSON.stringify(result), 'EX', 3600);
     return result;
   } catch (err) {
     logger.error(`Error fetching artists by genre: ${err.message}`);
@@ -228,7 +197,7 @@ const getTop10ArtistsByNumberOfListens = async () => {
     );
 
     if (tracks.length === 0) {
-      console.log('No tracks with listens found');
+      logger.info('No tracks with listens found');
       return [];
     }
 
@@ -244,10 +213,9 @@ const getTop10ArtistsByNumberOfListens = async () => {
 
     // Step 3: Get artist IDs from the aggregated data
     const artistIds = Object.keys(artistListenCount);
-    console.log('Artist IDs:', artistIds);
 
     if (artistIds.length === 0) {
-      console.log('No artists with listens found');
+      logger.info('No artists with listens found');
       return [];
     }
 
@@ -257,21 +225,17 @@ const getTop10ArtistsByNumberOfListens = async () => {
         try {
           return new ObjectId(id); // Ensure the ID is correctly converted
         } catch (error) {
-          console.error(`Error converting ID: ${id}`, error);
+          logger.error(`Error converting ID: ${id}`, error);
           return null;
         }
       })
       .filter(Boolean); // Remove any nulls from failed conversions
 
-    console.log('Converted Artist ObjectIds:', artistObjectIds);
-
     // Step 4: Query the Artist collection for these IDs
     const artists = await Artist.find({ _id: { $in: artistObjectIds } });
 
-    console.log('Artists found:', artists);
-
     if (artists.length === 0) {
-      console.log('No matching artists found in the database');
+      logger.info('No matching artists found in the database');
       return [];
     }
 
@@ -286,8 +250,6 @@ const getTop10ArtistsByNumberOfListens = async () => {
 
     // Step 7: Return the top 10 artists
     const top10Artists = artistData.slice(0, 10);
-
-    console.log('Top 10 Artists:', top10Artists);
 
     logger.info(`Top 10 Artists the most listened ${top10Artists}.`);
 

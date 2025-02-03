@@ -1,10 +1,8 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
-// const path = require('path');
-// const scheduleBackup = require('./services/backupService.js');
-//const { scheduleTemporaryFileCleanup } = require('./services/cleanService.js');
 const router = require('./routes/index.js');
+const logger = require('./logger.js');
 const config = require('./config/config.js')[process.env.NODE_ENV || 'development'];
 
 dotenv.config();
@@ -19,9 +17,9 @@ const connectDB = async () => {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
-    console.log('MongoDB connected successfully');
+    logger.log('MongoDB connected successfully');
   } catch (err) {
-    console.error('MongoDB connection error:', err);
+    logger.error('MongoDB connection error:', err);
     process.exit(1);
   }
 };
@@ -32,23 +30,9 @@ const initializeApp = async () => {
     // Step 1: Connect to the database
     await connectDB();
 
-    // Step 2: Configure and start the backup service
-    // const backupConfig = {
-    //   backupDir: path.join(__dirname, 'backups'),
-    //   s3Bucket: process.env.S3_BUCKET_NAME,
-    //   dbName: process.env.DB_NAME,
-    //   notificationUrl: process.env.NOTIFICATION_URL,
-    // };
-
-    // const backupService = new BackupService(backupConfig);
-    // backupService.scheduleBackup(); // Schedule backups to run periodically
-
-    // scheduleBackup(backupConfig);
-    // scheduleTemporaryFileCleanup(path.join(__dirname, 'temp'), 7);
-
-    console.log('Application initialized successfully');
+    logger.info('Application initialized successfully');
   } catch (error) {
-    console.error('Initialization failed:', error);
+    logger.error('Initialization failed:', error);
   }
 };
 
@@ -61,17 +45,17 @@ const startServer = () => {
 
   // Start Express server
   app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
+    logger.info(`Server running at http://localhost:${port}`);
   });
 };
 
 process.on('SIGINT', async () => {
   try {
     await mongoose.connection.close();
-    console.log('MongoDB connection closed');
+    logger.info('MongoDB connection closed');
     process.exit(0);
   } catch (error) {
-    console.error('Error during shutdown:', error);
+    logger.error('Error during shutdown:', error);
     process.exit(1);
   }
 });

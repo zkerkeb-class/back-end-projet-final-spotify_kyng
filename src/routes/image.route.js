@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { BlobServiceClient } = require('@azure/storage-blob');
-const path = require('path');
+const logger = require('../utils/logger');
 
 // Config Azure Blob Storage
 const AZURE_STORAGE_CONNECTION_STRING = process.env.AZURE_STORAGE_CONNECTION_STRING;
@@ -33,7 +33,7 @@ router.get('/image/:filename', async (req, res) => {
     // Envoyez l'image au client
     downloadBlockBlobResponse.readableStreamBody.pipe(res);
   } catch (error) {
-    console.error(`Error fetching image: ${error.message}`);
+    logger.error(`Error fetching image: ${error.message}`);
     res.status(500).json({ error: 'Error fetching the image' });
   }
 });

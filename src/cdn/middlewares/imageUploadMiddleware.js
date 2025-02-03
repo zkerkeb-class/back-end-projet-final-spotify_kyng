@@ -20,7 +20,6 @@ const upload = multer({ storage });
 
 // Middleware to optimize uploaded images
 const imageUploadMiddleware = async (req, res, next) => {
-  console.log('Uploaded file:', req.file);
   try {
     if (!req.file) {
       return next();
@@ -34,7 +33,7 @@ const imageUploadMiddleware = async (req, res, next) => {
     await blobClient.uploadData(req.file.buffer, {
       blobHTTPHeaders: { blobContentType: req.file.mimetype },
     });
-    console.log('Image uploaded to Azure Blob Storage:', blobClient.url);
+    logger.info('Image uploaded to Azure Blob Storage:', blobClient.url);
 
     // Generate CloudFront URL
     const azureBlobUrl = `${blobClient.url}?${AZURE_SAS_TOKEN_IMAGE}`;
@@ -72,7 +71,7 @@ const imageUploadMiddleware = async (req, res, next) => {
       }),
     ];
 
-    next(); 
+    next();
   } catch (error) {
     logger.error(`Error in imageUploadMiddleware: ${error.message}`);
     res.status(500).json({ error: 'Error processing the uploaded image' });

@@ -17,7 +17,7 @@ const initiateBackup = async (req, res) => {
 
 // Handle starting scheduled backups
 const startScheduledBackups = async (req, res) => {
-  const config = req.body; 
+  const config = req.body;
   try {
     scheduleBackup(config);
     logger.info('Scheduled backups started');

@@ -1,8 +1,10 @@
 const roomService = require('../services/roomService');
 const trackService = require('../services/trackService');
+const logger = require('../utils/logger');
+
 const socketHandler = (io) => {
   io.on('connection', (socket) => {
-    console.log('🔗 User connected:', socket.id);
+    logger.info('🔗 User connected:', socket.id);
 
     // 📌 Un utilisateur rejoint une salle
     socket.on('join-room', async (roomId, userId) => {
@@ -20,7 +22,7 @@ const socketHandler = (io) => {
         io.to(roomId).emit('room-state', { state, participants, currentTrack });
         io.to(roomId).emit('user-joined', { userId, participants });
 
-        console.log(`✅ User ${userId} joined room ${roomId}`);
+        logger.info(`✅ User ${userId} joined room ${roomId}`);
       } catch (error) {
         socket.emit('error', { message: error.message });
       }
@@ -38,10 +40,10 @@ const socketHandler = (io) => {
         // 🔥 Si dernier utilisateur, supprimer la salle
         if (participants.length === 0) {
           await roomService.deleteRoom(roomId);
-          console.log(`🚮 Room ${roomId} deleted (no more participants)`);
+          logger.info(`🚮 Room ${roomId} deleted (no more participants)`);
         }
 
-        console.log(`❌ User ${userId} left room ${roomId}`);
+        logger.info(`❌ User ${userId} left room ${roomId}`);
       } catch (error) {
         socket.emit('error', { message: error.message });
       }
@@ -52,7 +54,7 @@ const socketHandler = (io) => {
       try {
         await roomService.updatePlaybackState(roomId, true);
         io.to(roomId).emit('play');
-        console.log(`▶️ Play triggered in room ${roomId}`);
+        logger.info(`▶️ Play triggered in room ${roomId}`);
       } catch (error) {
         socket.emit('error', { message: error.message });
       }
@@ -63,7 +65,7 @@ const socketHandler = (io) => {
       try {
         await roomService.updatePlaybackState(roomId, false);
         io.to(roomId).emit('pause');
-        console.log(`⏸️ Pause triggered in room ${roomId}`);
+        logger.info(`⏸️ Pause triggered in room ${roomId}`);
       } catch (error) {
         socket.emit('error', { message: error.message });
       }
@@ -74,7 +76,7 @@ const socketHandler = (io) => {
       try {
         await roomService.updateCurrentTime(roomId, position);
         io.to(roomId).emit('seek', position);
-        console.log(`⏩ Seek to ${position}s in room ${roomId}`);
+        logger.info(`⏩ Seek to ${position}s in room ${roomId}`);
       } catch (error) {
         socket.emit('error', { message: error.message });
       }
@@ -85,7 +87,7 @@ const socketHandler = (io) => {
       try {
         await roomService.setCurrentTrack(roomId, trackId);
         io.to(roomId).emit('track-changed', { trackId });
-        console.log(`🎵 Track changed in room ${roomId} -> ${trackId}`);
+        logger.info(`🎵 Track changed in room ${roomId} -> ${trackId}`);
       } catch (error) {
         socket.emit('error', { message: error.message });
       }
@@ -104,13 +106,13 @@ const socketHandler = (io) => {
           // 🔥 Supprimer la salle si plus personne
           if (participants.length === 0) {
             await roomService.deleteRoom(roomId);
-            console.log(`🚮 Room ${roomId} deleted (empty)`);
+            logger.info(`🚮 Room ${roomId} deleted (empty)`);
           }
         } catch (error) {
-          console.error(`Erreur lors de la déconnexion: ${error.message}`);
+          logger.error(`Erreur lors de la déconnexion: ${error.message}`);
         }
       }
-      console.log(`🔌 User ${socket.id} disconnected`);
+      logger.info(`🔌 User ${socket.id} disconnected`);
     });
   });
 };

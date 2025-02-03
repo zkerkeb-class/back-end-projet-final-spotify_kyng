@@ -2,17 +2,12 @@ const mongoose = require('mongoose');
 const Track = require('../models/Track')(mongoose);
 const Joi = require('joi');
 const logger = require('../utils/logger');
-const { extractAudioMetadata } = require('../utils/metadataExtractor');
 const { uploadToAzureStorage } = require('./seedService');
 const Artist = require('../models/Artist')(mongoose);
-const { ObjectId } = require('mongodb');
 const { Types } = require('mongoose');
 const { getBlobStream } = require('../utils/azureBlobHelper');
 const Album = require('../models/Album')(mongoose);
 const Playlist = require('../models/Playlist')(mongoose);
-
-// const redisClient = require('../config/redis');
-// const Playlist = require('../models/Playlist');
 
 const trackSchema = Joi.object({
   title: Joi.string().required().trim(),
@@ -57,7 +52,6 @@ const createTrack = async (data) => {
     } else {
       data.albumId = null; // or remove it entirely using `delete data.artistId`
     }
-    // console.log('tt : ', data.artistId)
     // Convert albumId to ObjectId if it's a valid format, otherwise set it to null
     if (albumId && mongoose.Types.ObjectId.isValid(albumId)) {
       data.albumId = new Types.ObjectId(albumId);
@@ -65,7 +59,6 @@ const createTrack = async (data) => {
       data.albumId = null; // or remove it entirely using `delete data.albumId`
     }
 
-    console.log('tt : ', data.albumId);
     const { error, value } = trackSchema.validate(data);
     if (error) {
       throw new Error(error.details[0].message);
@@ -77,39 +70,31 @@ const createTrack = async (data) => {
     }
 
     let azureFileUrl;
+    // let fileName;
     if (typeof value.audioLink === 'object') {
       azureFileUrl = await uploadToAzureStorage(value.audioLink.convertedPath, 'spotify');
-      fileName = azureFileUrl.split('/').pop(); // Extract only the file name
-    } else {
-      fileName = value.audioLink.split('/').pop(); // Handle string input directly
+      // fileName = azureFileUrl.split('/').pop(); // Extract only the file name
     }
+    //  else {
+    //   fileName = value.audioLink.split('/').pop(); // Handle string input directly
+    // }
 
     // Rest of the method remains the same...
     const trackPayload = {
       ...value,
-      //audioLink: fileName
       audioLink: azureFileUrl,
     };
 
     const track = await Track.create(trackPayload);
     return track;
   } catch (error) {
-    console.error(`Error in createTrack service: ${error.message}`);
+    logger.error(`Error in createTrack service: ${error.message}`);
     throw error;
   }
 };
 
 const getAllTracks = async (page = 1, limit = 10) => {
   try {
-    const cacheKey = `tracks:page:${page}:limit:${limit}`; // Verifier si c'est bien ca
-
-    // const cachedData = await redisClient.get(cacheKey);
-
-    // if (cachedData) {
-    //   logger.info(`Tracks retrieved from cache for page ${page}, limit ${limit}`);
-    //   return JSON.parse(cachedData);
-    // }
-
     const skip = (page - 1) * limit;
 
     const totalCount = await Track.countDocuments();
@@ -126,7 +111,6 @@ const getAllTracks = async (page = 1, limit = 10) => {
       },
     };
 
-    // redisClient.set(cacheKey, JSON.stringify(result), 'EX', 3600); // Cache for 1 hour
     logger.info(`Tracks retrieved from db for page ${page}, limit ${limit}`);
 
     return result;
@@ -201,9 +185,6 @@ const updatedTrack = async (id, data) => {
     // Update the track in the database with the validated data
     const updatedTrack = await Track.findByIdAndUpdate(id, value, { new: true });
 
-    // Clear the cache after updating
-    // redisClient.del('tracks:all'); // Verifier le cache
-
     logger.info(`Track with ID ${id} updated successfully.`);
 
     return updatedTrack;
@@ -221,8 +202,6 @@ const deleteTrack = async (id) => {
 
     const deleteTrack = await Track.findByIdAndDelete(id);
 
-    // redisClient.del('tracks:all');
-
     if (deleteTrack) {
       logger.info(`Track with ID ${id} deleted successfully.`);
     }
@@ -236,14 +215,6 @@ const deleteTrack = async (id) => {
 
 const getTracksByArtist = async (artistId, page = 1, limit = 10) => {
   try {
-    // const cacheKey = `tracks:artist:${artistId}:page:${page}:limit:${limit}`;
-    // const cachedData = await redisClient.get(cacheKey);
-
-    // if (cachedData) {
-    //   logger.info(`Tracks for artist ${artistId} retrieved from cache.`);
-    //   return JSON.parse(cachedData);
-    // }
-
     const skip = (page - 1) * limit;
 
     // Fetch tracks filtered by artist
@@ -265,7 +236,6 @@ const getTracksByArtist = async (artistId, page = 1, limit = 10) => {
       },
     };
 
-    // redisClient.set(cacheKey, JSON.stringify(result), 'EX', 3600); // Cache for 1 hour
     logger.info(`Tracks for artist ${artistId} retrieved from database.`);
     return result;
   } catch (err) {
@@ -276,14 +246,6 @@ const getTracksByArtist = async (artistId, page = 1, limit = 10) => {
 
 const getTracksByAlbum = async (albumId, page = 1, limit = 10) => {
   try {
-    const cacheKey = `tracks:album:${albumId}:page:${page}:limit:${limit}`;
-    // const cachedData = await redisClient.get(cacheKey);
-
-    // if (cachedData) {
-    //   logger.info(`Tracks for album ${albumId} retrieved from cache.`);
-    //   return JSON.parse(cachedData);
-    // }
-
     const skip = (page - 1) * limit;
 
     // Fetch tracks filtered by album
@@ -305,7 +267,6 @@ const getTracksByAlbum = async (albumId, page = 1, limit = 10) => {
       },
     };
 
-    // redisClient.set(cacheKey, JSON.stringify(result), 'EX', 3600); // Cache for 1 hour
     logger.info(`Tracks for album ${albumId} retrieved from database.`);
     return result;
   } catch (err) {
@@ -316,14 +277,6 @@ const getTracksByAlbum = async (albumId, page = 1, limit = 10) => {
 
 const getTracksByGenre = async (genre, page = 1, limit = 10) => {
   try {
-    const cacheKey = `tracks:genre:${genre}:page:${page}:limit:${limit}`;
-    // const cachedData = await redisClient.get(cacheKey);
-
-    // if (cachedData) {
-    //   logger.info(`Tracks for genre ${genre} retrieved from cache.`);
-    //   return JSON.parse(cachedData);
-    // }
-
     const skip = (page - 1) * limit;
 
     const tracks = await Track.find({ genres: genre }).skip(skip).limit(limit);
@@ -339,7 +292,6 @@ const getTracksByGenre = async (genre, page = 1, limit = 10) => {
       },
     };
 
-    // redisClient.set(cacheKey, JSON.stringify(result), 'EX', 3600);
     return result;
   } catch (err) {
     logger.error(`Error fetching tracks by genre: ${err.message}`);
@@ -349,14 +301,6 @@ const getTracksByGenre = async (genre, page = 1, limit = 10) => {
 
 const getTracksByYear = async (year, page = 1, limit = 10) => {
   try {
-    const cacheKey = `tracks:year:${year}:page:${page}:limit:${limit}`;
-    // const cachedData = await redisClient.get(cacheKey);
-
-    // if (cachedData) {
-    //   logger.info(`Tracks for year ${year} retrieved from cache.`);
-    //   return JSON.parse(cachedData);
-    // }
-
     const skip = (page - 1) * limit;
 
     const tracks = await Track.find({ releaseYear: year }).skip(skip).limit(limit);
@@ -373,7 +317,6 @@ const getTracksByYear = async (year, page = 1, limit = 10) => {
       },
     };
 
-    // redisClient.set(cacheKey, JSON.stringify(result), 'EX', 3600); // Cache for 1 hour
     logger.info(`Tracks for year ${year} retrieved from database.`);
     return result;
   } catch (err) {
@@ -524,7 +467,7 @@ const advancedFilter = async (filters, sorts, page, limit) => {
       data: reasons,
     };
   } catch (error) {
-    console.error('Error in advancedFilter service:', error);
+    logger.error('Error in advancedFilter service:', error);
     return {
       status: 500,
       message: 'Error fetching filtered tracks',
@@ -569,5 +512,5 @@ module.exports = {
   getTrackByTitle,
   getTop10TracksByReleaseDate,
   advancedFilter,
-  streamTrack
+  streamTrack,
 };

@@ -4,6 +4,7 @@ const router = express.Router();
 const { seedDatabase } = require('../controllers/seed.controller');
 const audioMiddleware = require('../cdn/middlewares/audioMiddleware');
 const { seedDatabaseFromAudioFiles } = require('../services/seedService');
+const logger = require('../utils/logger');
 
 // const path = require('path'); // Import path module
 // const { optimizeAudio } = require('../cdn/scripts/audioOptimizer');
@@ -26,7 +27,7 @@ router.post('/upload-multiple-music', audioMiddleware, async (req, res) => {
       return res.status(400).json({ error: 'No files uploaded' });
     }
 
-    console.log(
+    logger.info(
       'Uploaded files:',
       uploadedFiles.map((file) => ({
         originalName: file.originalName,
@@ -41,7 +42,7 @@ router.post('/upload-multiple-music', audioMiddleware, async (req, res) => {
         const fileToUpload = uploadedFile.convertedPath || uploadedFile.path;
 
         if (!fileToUpload) {
-          console.error('No file path found for upload', uploadedFile);
+          logger.error('No file path found for upload', uploadedFile);
           return null;
         }
 
@@ -49,7 +50,7 @@ router.post('/upload-multiple-music', audioMiddleware, async (req, res) => {
           const result = await seedDatabaseFromAudioFiles(fileToUpload);
           return result;
         } catch (seedError) {
-          console.error('Seeding error:', seedError);
+          logger.error('Seeding error:', seedError);
           return null;
         }
       })
@@ -70,7 +71,7 @@ router.post('/upload-multiple-music', audioMiddleware, async (req, res) => {
       processedTracks,
     });
   } catch (error) {
-    console.error('Error processing music files:', error);
+    logger.error('Error processing music files:', error);
     res.status(500).json({
       error: 'Failed to process music files',
       details: error.message,

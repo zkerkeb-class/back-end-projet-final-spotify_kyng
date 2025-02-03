@@ -2,20 +2,18 @@ const { faker } = require('@faker-js/faker');
 const logger = require('../utils/logger');
 const { extractAudioMetadata } = require('../utils/metadataExtractor');
 const mongoose = require('mongoose');
-const { BlobServiceClient, StorageSharedKeyCredential } = require('@azure/storage-blob');
+const { BlobServiceClient } = require('@azure/storage-blob');
 const path = require('path');
 const fs = require('fs').promises;
 const dotenv = require('dotenv');
-dotenv.config({ path: '.env.dev' }); // Explicitly load .env.dev
+dotenv.config({ path: '.env.dev' });
 
 const Artist = require('../models/Artist')(mongoose);
 const Album = require('../models/Album')(mongoose);
 const Track = require('../models/Track')(mongoose);
 
 const accountName = process.env.AZURE_STORAGE_ACCOUNT_NAME;
-const accountKey = process.env.AZURE_STORAGE_ACCOUNT_KEY;
 
-console.log('test : ', accountName, accountKey);
 const containerName = 'spotify';
 
 const generateGenre = () => {
@@ -66,16 +64,12 @@ const getBlobServiceClient = () => {
     throw new Error('Azure storage credentials are not configured');
   }
 
-  // const sharedKeyCredential = new StorageSharedKeyCredential(accountName, accountKey);
-  // const sasToken = process.env.AZURE_STORAGE_SAS_TOKEN;
   const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
   if (!connectionString) {
     throw new Error('Azure storage connection string is not configured');
   }
 
   return BlobServiceClient.fromConnectionString(connectionString);
-  // return new BlobServiceClient(`https://${accountName}.blob.core.windows.net`, sharedKeyCredential);
-  // return new BlobServiceClient(`https://${accountName}.blob.core.windows.net?${sasToken}`);
 };
 
 async function uploadToAzureStorage(filePath, containerName) {
