@@ -11,7 +11,7 @@ const { ObjectId } = require('mongodb');
 
 const artistSchema = Joi.object({
   name: Joi.string().optional().trim(),
-  genres: Joi.string().required(),
+  genres: Joi.string().optional(),
   images: Joi.array().items(
     Joi.object({
       path: Joi.string().required(),

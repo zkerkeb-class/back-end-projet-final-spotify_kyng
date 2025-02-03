@@ -1,11 +1,13 @@
 const express = require('express');
 const { createTrack, getAllTrack, getTrackById, updatedTrack, deleteTrack, getTracksByArtist, getTracksByAlbum, getTracksByGenre, getTracksByYear, streamTrack, getTrackByTitle, getTop10TracksByReleaseDate, advancedFilter } = require('../controllers/track.controller');
 const audioMiddleware = require('../cdn/middlewares/audioMiddleware'); 
+const checkPermission = require('../middlewares/rbacMiddleware');
+const authMiddleware = require('../middlewares/authMiddleware');
 const router = express.Router();
 
 router.get('/filter', advancedFilter);
 
-router.post('/:albumId', audioMiddleware, createTrack);
+router.post('/:albumId',authMiddleware,checkPermission(['upload_music']), audioMiddleware, createTrack);
 
 // Route for getting all tracks
 router.get('/', getAllTrack);
@@ -17,10 +19,10 @@ router.get('/:id', getTrackById);
 router.get('/title/:title', getTrackByTitle);
 
 // Route for updating a track
-router.patch('/:id', updatedTrack);
+router.patch('/:id',authMiddleware,checkPermission(['edit_metadata']), updatedTrack);
 
 // Route for deleting a track
-router.delete('/:id', deleteTrack);
+router.delete('/:id', authMiddleware,checkPermission(['delete_music']), deleteTrack);
 
 // Route for getting tracks by artist
 router.get('/artist/:artistId', getTracksByArtist);

@@ -3,13 +3,15 @@ const express = require('express');
 const router = express.Router();
 const albumController = require('../controllers/album.controller');
 const {imageUploadMiddleware, upload} = require('../cdn/middlewares/imageUploadMiddleware');
+const checkPermission = require('../middlewares/rbacMiddleware');
+const authMiddleware = require('../middlewares/authMiddleware');
 
 // Route pour créer un nouvel album
 // router.post('/', albumController.createAlbum);
 
     
 // router.post('/', upload.single('image'), imageUploadMiddleware, albumController.createAlbum);
-router.post('/:artistId', upload.single('image'), imageUploadMiddleware, albumController.createAlbum);
+router.post('/:artistId',authMiddleware,checkPermission(['upload_music']), upload.single('image'), imageUploadMiddleware, albumController.createAlbum);
 // router.post('/', (req, res, next) => {
 //   upload(req, res, (err) => {
 //     if (err) {
@@ -32,11 +34,11 @@ router.get('/title/:title', albumController.getAlbumByTitle);
 // Route pour mettre à jour un album par ID
 // router.put('/:id', albumController.updatedAlbum);
 // Route pour mettre à jour un album par ID
-router.put('/:id', upload.single('image'), imageUploadMiddleware, albumController.updatedAlbum);
+router.put('/:id',authMiddleware,checkPermission(['edit_metadata']), upload.single('image'), imageUploadMiddleware, albumController.updatedAlbum);
 
 
 // Route pour supprimer un album par ID
-router.delete('/:id', albumController.deleteAlbum);
+router.delete('/:id',authMiddleware,checkPermission(['delete_music']), albumController.deleteAlbum);
 
 // Route pour obtenir tous les albums d'un artiste avec pagination
 router.get('/artist/:artistId', albumController.getAlbumsByArtist);

@@ -3,18 +3,13 @@ const jwt = require('jsonwebtoken');
 const mongoose = require('mongoose');
 const User = require('../models/user')(mongoose);
 
-const loginUser = async (email, password) => {
+/*const loginUser = async (email, password) => {
   try {
-    // console.log('JWT_SECRET:', process.env.JWT_SECRET);
     const user = await User.findOne({ email });
     if (!user) {
       throw new Error('User not found');
     }
     const isMatch = await bcrypt.compare(password, user.password);
-    //const isMatch = password === 'spotify_kyng';
-    /*console.log('Password:', password); 
-  console.log('Hashed password:', user.password); 
-  console.log('Password match:', isMatch); */
     if (!isMatch) {
       throw new Error('Invalid password');
     }
@@ -28,7 +23,31 @@ const loginUser = async (email, password) => {
     throw error;
   }
 };
+*/
+const loginUser = async (email, password) => {
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      throw new Error('User not found');
+    }
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      throw new Error('Invalid password');
+    }
 
+    // Inclus le rôle de l'utilisateur dans le payload du token
+    const token = jwt.sign(
+      { id: user._id, email: user.email, role: user.role }, // Ajoute le rôle ici
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    return token;
+  } catch (error) {
+    console.error('Error in loginUser:', error.message);
+    throw error;
+  }
+};
 // Fonction register
 /*const createUser = async (userData) => {
   const { firstname, lastname, email, phone, password, role } = userData;

@@ -1,20 +1,19 @@
 const artistService = require('../services/artistService');
 const logger = require('../utils/logger');
-// const mongoose = require('mongoose');
-
-// const Artist = require('../models/Artist')(mongoose);
 
 const createArtist = async (req, res) => {
   try {
-
     if (!req.optimizedImages || req.optimizedImages.length === 0) {
       throw new Error('No optimized images found.');
     }
+
+    const mainImage = req.optimizedImages[0].url; 
+
     const artistData = {
       name: req.body.name,
       genres: req.body.genres,
       images: req.optimizedImages.map(img => ({
-        path: img.path
+        path: img.url 
       }))
     };
 
@@ -24,10 +23,9 @@ const createArtist = async (req, res) => {
     res.status(201).json(artist);
   } catch (error) {
     logger.error(`Error in createArtist: ${error.message}.`);
-
     res.status(400).json({ error: error.message });
   }
-};
+}; 
 
 const getAllArtist = async (req, res) => {
   try {
@@ -51,15 +49,35 @@ const getArtistById = async (req, res) => {
 
     if (!artist) {
       logger.warn(`Artist with ID ${req.params.id} not found`);
-
       return res.status(404).json({ error: 'Artist not found.' });
     }
-    logger.info(`Artist with ID ${req.params.id} retrieved successfully.`);
 
-    res.status(200).json(artist);
+    // URLs de l'image
+    const cloudfrontUrl = artist.images.length > 0 
+      ? artist.images[0].path 
+      : null;
+
+    const filename = artist.images.length > 0 
+      ? artist.images[0].path.split('/').pop() 
+      : null;
+
+    const localImageUrl = filename 
+      ? `http://localhost:8000/api/images/image/${encodeURIComponent(filename)}` 
+      : null;
+
+    const artistResponse = {
+      name: artist.name,
+      genres: artist.genres,
+      imageUrls: {
+        cloudfront: cloudfrontUrl, // URL CloudFront
+        local: localImageUrl, // URL locale
+      },
+    };
+
+    logger.info(`Artist with ID ${req.params.id} retrieved successfully.`);
+    res.status(200).json(artistResponse);
   } catch (error) {
     logger.error(`Error in getArtistById: ${error.message}.`);
-
     res.status(400).json({ error: error.message });
   }
 };

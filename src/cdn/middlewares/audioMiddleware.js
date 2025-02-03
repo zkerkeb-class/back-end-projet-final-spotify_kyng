@@ -52,7 +52,6 @@ const audioMiddleware = (req, res, next) => {
   console.log('IN: ', req.files);
 
   upload.array('files', 10)(req, res, async (err) => {
-    
     if (err instanceof multer.MulterError) {
       console.error('Multer error:', err.message);
       return res.status(400).json({
@@ -67,13 +66,13 @@ const audioMiddleware = (req, res, next) => {
       });
     }
 
+    // If no files are uploaded, proceed to the next middleware/controller
     if (!req.files || req.files.length === 0) {
-      console.error('No files were uploaded');
-      return res.status(400).json({
-        error: 'No files uploaded',
-      });
+      console.log('No files uploaded, proceeding without audio updates');
+      return next();
     }
 
+    // Attach uploaded file information to the request
     req.uploadedFiles = req.files.map((file) => ({
       originalName: file.originalname,
       filename: file.filename,
