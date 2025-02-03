@@ -8,6 +8,7 @@
     "prepare": "husky",
     "format": "prettier-eslint --write ./src/**/*.{js,jsx,ts,tsx}",
     "lint": "eslint .",
+    "lint-fix":"eslint . --fix",
     "dev": "nodemon src/index.js"
   },
   "author": "",
@@ -73,6 +74,9 @@
     "response-time": "^2.3.3",
     "sequelize": "^6.37.5",
     "sharp": "^0.33.5",
+    "socket.io": "^4.8.1",
+    "socketio": "^1.0.0",
+    "uuid": "^11.0.5",
     "tar": "^7.4.3"
   }
 }

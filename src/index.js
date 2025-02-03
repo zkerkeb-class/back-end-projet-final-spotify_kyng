@@ -7,9 +7,11 @@ const mongoose = require('mongoose');
 const responseTime = require('response-time');
 const { trackBandwidth, trackSuccessFailure } = require('./services/monitoringService');
 const dotenv = require('dotenv');
+const http = require('http');
 //const Redis = require('ioredis');
 //const dns = require('dns').promises; 
 const cors = require('cors');
+const { Server } = require('socket.io');
 require('dotenv').config({ path: '../.env.dev' });
 const schedule = require('node-schedule');
 
@@ -21,14 +23,18 @@ const router = require('./routes/index.js');
 const config = require('./config/config.js')[process.env.NODE_ENV || 'development'];
 const querycacheMiddleware = require('./middlewares/querycache.js');
 const globalRateLimiter = require('./middlewares/rateLimiter.js');
+
+const socketHandler = require('./socket/socketHandler.js');
+
 const logger = require('./utils/logger.js');
 const { runBackup, cleanupOldBackupsOnAzure } = require('./services/backupService.js');
+
 
 dotenv.config();
 
 const app = express();
 const port = 8000;
-
+const server = http.createServer(app);
 app.use(helmet());
 
 /*app.use(responseTime((req, res, time) => {
@@ -58,9 +64,16 @@ const corsOptions = {
   allowedHeaders: ['Content-Type', 'Authorization'],
   // credentials: true,
 };
+const io = new Server(server, {
+  cors: corsOptions
+});
+
+socketHandler(io);
 
 // Enable CORS
 app.use(cors(corsOptions));
+
+
 
 // Database connection function
 /*const connectDB = async () => {
@@ -186,7 +199,7 @@ const startServer = async () => {
 
 
   // Start Express server
-  app.listen(port, () => {
+  server.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);
   });
 };

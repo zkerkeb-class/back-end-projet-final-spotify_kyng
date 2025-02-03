@@ -58,7 +58,7 @@ const createTrack = async (req, res) => {
         producer: faker.person.fullName(),
         songwriter: faker.person.fullName(),
       },
-      releaseYear: req.body.isExplicit || metadata.year
+      releaseYear: req.body.releaseYear || metadata.year
     };
 
     // Call the service to create a track

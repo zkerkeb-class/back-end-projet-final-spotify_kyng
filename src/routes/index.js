@@ -16,8 +16,11 @@ const authRoutes = require('./auth.route');
 const testauth = require('./testauth');
 const metricsRoutes = require('./metrics.route');
 const searchRoutes = require('./search.route');
+
+const roomRoutes = require('./room.route');
 const imageRoutes = require('./image.route');
 const imagecloudRoutes = require('./imagecloud.route');
+
 
 // // Route for generating a specific number of MP3 metadata entries
 // router.get('/song', generateMp3MetadataController);
@@ -31,6 +34,7 @@ router.use('/album', albumRoutes);
 router.use('/artist', artistRoutes);
 router.use('/playlist', playlistRoutes);
 router.use('/search', searchRoutes);
+router.use('/room', roomRoutes);
 
 // router.use(globalRateLimiter);
 router.use(routeTest);
