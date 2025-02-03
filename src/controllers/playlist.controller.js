@@ -1,8 +1,5 @@
 const playlistService = require('../services/playlistService');
 const logger = require('../utils/logger');
-// const mongoose = require('mongoose');
-
-// const Playlist = require('../models/Playlist')(mongoose);
 
 const createPlaylist = async (req, res) => {
   try {

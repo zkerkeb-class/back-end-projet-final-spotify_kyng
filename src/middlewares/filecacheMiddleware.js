@@ -8,14 +8,11 @@ const cacheFileMiddleware = async (req, res, next) => {
   try {
     const cachedFile = await getFileFromCache(key);
     if (cachedFile) {
-      //console.log('Cache hit (fichier)');
       const buffer = Buffer.from(cachedFile, 'base64');
       console.log('Buffer généré à partir du cache :', buffer);
       res.set('Content-Type', 'audio/m4a');
       return res.send(buffer);
     }
-
-    //console.log('Cache miss (fichier)');
     next();
   } catch (error) {
     console.error('Redis cache error:', error);

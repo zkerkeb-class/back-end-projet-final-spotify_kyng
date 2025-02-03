@@ -1,31 +1,25 @@
 module.exports = (mongoose) => {
   const albumSchema = new mongoose.Schema(
     {
-      // Album name/title
       title: {
         type: String,
         required: true,
         trim: true,
       },
-      // Link to album
       linkTitle: {
         type: String,
       },
-      // Link type
       linkType: {
         type: String,
       },
-      // Reference to Artist (foreign key)
       artistId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Artist',
         required: true,
       },
-      // Release date
       releaseDate: {
         type: Date,
       },
-      // Album cover image
       images: {
         type: [
           {
@@ -34,16 +28,13 @@ module.exports = (mongoose) => {
         ],
         default: [],
       },
-      // Audio tracks list (this can be an array of track references)
       audioTracks: {
         type: [String],
       },
-      // Total album duration
       duration: {
         type: Number,
         min: 0,
       },
-      // Genre
       genres: {
         type: String,
         enum: [

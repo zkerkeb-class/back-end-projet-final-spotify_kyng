@@ -23,7 +23,6 @@ const imageUploadMiddleware = async (req, res, next) => {
   console.log('Uploaded file:', req.file);
   try {
     if (!req.file) {
-      // No file uploaded, continue to the next middleware/controller
       return next();
     }
 
@@ -73,7 +72,7 @@ const imageUploadMiddleware = async (req, res, next) => {
       }),
     ];
 
-    next(); // Pass control to the next middleware/handler
+    next(); 
   } catch (error) {
     logger.error(`Error in imageUploadMiddleware: ${error.message}`);
     res.status(500).json({ error: 'Error processing the uploaded image' });
