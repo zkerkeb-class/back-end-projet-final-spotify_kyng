@@ -6,18 +6,17 @@ const search = async (req, res) => {
     const { q: query, page = 1, limit = 10 } = req.query;
 
     if (!query) {
-      return res.status(400).json({ error: 'Search query is required' });
+      return res.status(400).json({ error: 'Recherche requise' });
     }
 
     const results = await searchService.search(query, parseInt(page), parseInt(limit));
-    logger.info(`Search completed for query: ${query}`);
+    logger.info(`Recherche effectuée pour: ${query}`);
     return res.status(200).json(results);
   } catch (error) {
-    logger.error(`Search error: ${error.message}`);
-    return res.status(500).json({ error: 'Internal Server Error' });
+    logger.error(`Erreur de recherche: ${error.message}`);
+    return res.status(500).json({ error: 'Erreur interne du serveur' });
   }
-}
-
+};
 
 module.exports = {
   search
