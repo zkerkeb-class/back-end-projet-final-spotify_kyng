@@ -7,14 +7,10 @@ const mongoose = require('mongoose');
 const responseTime = require('response-time');
 const { trackBandwidth, trackSuccessFailure } = require('./services/monitoringService');
 const dotenv = require('dotenv');
-//const Redis = require('ioredis');
-//const dns = require('dns').promises; 
 const cors = require('cors');
 require('dotenv').config({ path: '../.env.dev' });
 const schedule = require('node-schedule');
-
 const path = require('path');
-// const scheduleBackup = require('./services/backupService.js');
 const { scheduleTemporaryFileCleanup } = require('./services/cleanService.js');
 
 const router = require('./routes/index.js');
@@ -23,6 +19,7 @@ const querycacheMiddleware = require('./middlewares/querycache.js');
 const globalRateLimiter = require('./middlewares/rateLimiter.js');
 const logger = require('./utils/logger.js');
 const { runBackup, cleanupOldBackupsOnAzure } = require('./services/backupService.js');
+const metricsRouter = require('../src/routes/metrics.route.js');
 
 dotenv.config();
 
@@ -31,18 +28,9 @@ const port = 8000;
 
 app.use(helmet());
 
-/*app.use(responseTime((req, res, time) => {
-  console.log(`Requête ${req.method} ${req.url} - Temps de réponse : ${time.toFixed(2)} ms`);
-}));*/
 const metrics = {
-  responseTime: 0, // Initialiser le temps de réponse à 0
+  responseTime: 0,
 };
-
-// Middleware pour mesurer le temps de réponse
-app.use(responseTime((req, res, time) => {
-  metrics.responseTime = time; // Mettre à jour le temps de réponse dans l'objet global
-  console.log(`Requête ${req.method} ${req.url} - Temps de réponse : ${time.toFixed(2)} ms`);
-}));
 
 //app.use(cookieParser());
 app.use(express.json()); // Pour parser le JSON dans les requêtes
@@ -62,21 +50,18 @@ const corsOptions = {
 // Enable CORS
 app.use(cors(corsOptions));
 
-// Database connection function
-/*const connectDB = async () => {
-  try {
-    await mongoose.connect(config.uri, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      connectTimeoutMS: 5000, 
-      socketTimeoutMS: 45000,// timeout pour les req si une req prend plus de 45s elle sera annulee
-    });
-    console.log('MongoDB connected successfully');
-  } catch (err) {
-    console.error('MongoDB connection error:', err);
-    process.exit(1);
+/*app.get('/api/csrf-token', (req, res) => {
+  res.json({ csrfToken: req.csrfToken() });
+}); */
+
+// Gestion des erreurs CSRF
+app.use((err, req, res, next) => {
+  if (err.code === 'EBADCSRFTOKEN') {
+    return res.status(403).json({ message: 'Token CSRF invalide ou manquant.' });
   }
-};*/
+  next(err);
+});
+// Database connection function
 async function connectWithRetry() {
   const pRetry = (await import('p-retry')).default;
   return pRetry(() => mongoose.connect(process.env.MONGO_URI, {
@@ -137,26 +122,9 @@ const initializeApp = async () => {
 
 app.use(express.json());
 
-
-/*app.get('/api/csrf-token', csrfProtection, (req, res) => {
-  res.json({ csrfToken: req.csrfToken() });
-});
-// Gestion des erreurs CSRF
-app.use((err, req, res, next) => {
-  if (err.code === 'EBADCSRFTOKEN') {
-      return res.status(403).json({ message: 'Token CSRF invalide ou manquant.' });
-  }
-  next(err);
-});*/
 //app.use(measureResponseTime);
 app.use(trackBandwidth);
 app.use(trackSuccessFailure);
-app.get('/api/response-time', (req, res) => {
-  const responseTimeData = {
-    responseTime: metrics.responseTime, // Récupérer le temps de réponse
-  };
-  res.json(responseTimeData); // Renvoyer le temps de réponse au format JSON
-});
 // Routes
 
 app.use('/api', router);
@@ -176,15 +144,10 @@ app.use((err, req, res, next) => {
 });
 
 app.use(querycacheMiddleware);
-
+app.use('/metrics', metricsRouter);
 const startServer = async () => {
   initializeApp();
-  // const redisUrlEx = process.env.REDIS_URL_EX;
-
-  // redisClient = await connectRedis(redisUrlEx);
-
-
-
+   
   // Start Express server
   app.listen(port, () => {
     console.log(`Server running at http://localhost:${port}`);

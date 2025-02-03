@@ -29,7 +29,7 @@ const createArtist = async (req, res) => {
 
 const getAllArtist = async (req, res) => {
   try {
-    const { page = 1, limit = 10 } = req.query; // Default values: page 1, limit 10
+    const { page = 1, limit = 10 } = req.query; 
     const parsedPage = parseInt(page, 10);
     const parsedLimit = parseInt(limit, 10);
     const artists = await artistService.getAllArtist(parsedPage, parsedLimit);
@@ -104,12 +104,9 @@ const getArtistByName = async (req, res) => {
 const updatedArtist = async (req, res) => {
   try {
     let artistData = req.body;
-    
-    // If there are new optimized images uploaded, we should update the album's image field
     if (req.optimizedImages && req.optimizedImages.length > 0) {
       artistData.images = req.optimizedImages.map(img => ({ path: img.path }));
     }
-
 
     const artist = await artistService.updatedArtist(req.params.id, artistData);
 

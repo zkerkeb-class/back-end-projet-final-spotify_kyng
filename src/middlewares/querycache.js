@@ -1,10 +1,7 @@
-//const redisClient = require('../index');
 const redisClient = require('../config/redis');
-// routes à exclure du cache (cache de session)
 const excludedRoutes = ['/auth/login'];
 
 const querycacheMiddleware = async (req, res, next) => {
-  // Si la route est exclue du cache, on passe directement au middleware suivant
   if (excludedRoutes.includes(req.path)) {
         return next();
     }

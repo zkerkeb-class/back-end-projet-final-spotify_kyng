@@ -4,7 +4,7 @@ const sharp = require('sharp');
 const logger = require('../utils/logger');
 
 async function generateOptimizedVersions(fileBuffer, originalFileName) {
-    logger.info('🎨 Début de l\'optimisation des images');
+    logger.info(' Début de l\'optimisation des images');
 
     // 1. CONFIGURATION
     const sizes = {
@@ -15,7 +15,6 @@ async function generateOptimizedVersions(fileBuffer, originalFileName) {
 
     const formats = {
         jpeg: { quality: 80, mozjpeg: true }
-        // webp: { quality: 80 }
     };
 
     try {
@@ -26,7 +25,7 @@ async function generateOptimizedVersions(fileBuffer, originalFileName) {
         logger.debug({
             sizes: Object.keys(sizes),
             formats: Object.keys(formats)
-        }, '⚙️ Configuration de l\'optimisation');
+        }, 'Configuration de l\'optimisation');
 
         // 3. TRAITEMENT DES IMAGES
         const resultats = await Promise.all(
@@ -62,7 +61,7 @@ async function generateOptimizedVersions(fileBuffer, originalFileName) {
                                 error: erreur.message,
                                 size: nomTaille,
                                 format: format
-                            }, '❌ Échec de génération d\'une version');
+                            }, 'Échec de génération d\'une version');
                             return null;
                         }
                     })
@@ -75,7 +74,7 @@ async function generateOptimizedVersions(fileBuffer, originalFileName) {
 
         logger.info({
             versionsCount: versions.length
-        }, '✅ Optimisation terminée avec succès');
+        }, 'Optimisation terminée avec succès');
 
         // 4. RETOUR DES RÉSULTATS
         return {
@@ -88,7 +87,7 @@ async function generateOptimizedVersions(fileBuffer, originalFileName) {
         logger.error({
             error: erreur.message,
             stack: erreur.stack
-        }, '💥 Erreur fatale lors de l\'optimisation');
+        }, 'Erreur fatale lors de l\'optimisation');
         throw new Error('Échec de l\'optimisation de l\'image');
     }
 }

@@ -1,13 +1,11 @@
 module.exports = (mongoose) => {
   const artistSchema = new mongoose.Schema(
     {
-      // Artist name
       name: {
         type: String,
         required: true,
         trim: true,
       },
-      // Genres
       genres: {
         type: String,
         enum: [
@@ -85,7 +83,6 @@ module.exports = (mongoose) => {
           'Baladi',
         ],
       },
-      // Image types
       images: [{
         path: {
           type: String,
@@ -103,6 +100,5 @@ module.exports = (mongoose) => {
     }
   );
 
-  // Check if the model already exists before compiling
   return mongoose.models.Artist || mongoose.model('Artist', artistSchema);
 };

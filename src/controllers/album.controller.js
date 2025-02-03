@@ -110,14 +110,12 @@ const getAlbumByTitle = async (req, res) => {
 const updatedAlbum = async (req, res) => {
   try {
     let albumData = req.body;
-
-    // If there are new optimized images uploaded, update the album's image field
     if (req.optimizedImages && req.optimizedImages.length > 0) {
       albumData.images = req.optimizedImages.map(img => ({ path: img.url }));
     }
 
     if (!albumData.artistId) {
-      delete albumData.artistId; // If not provided, remove it from the update
+      delete albumData.artistId; 
     }
 
     const album = await albumService.updatedAlbum(req.params.id, albumData);
@@ -158,7 +156,7 @@ const deleteAlbum = async (req, res) => {
 
 const getAlbumsByArtist = async (req, res) => {
   try {
-    const { artistId } = req.params; // Récupère l'ID de l'artiste
+    const { artistId } = req.params; 
     const { page = 1, limit = 10 } = req.query;
 
     const parsedPage = parseInt(page, 10);

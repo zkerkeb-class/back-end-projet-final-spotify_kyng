@@ -1,6 +1,6 @@
 const ffmpeg = require('fluent-ffmpeg');
-const path = require('path'); // Ensure path module is imported
-const fs = require('fs'); // Ensure fs module is imported
+const path = require('path'); 
+const fs = require('fs'); 
 
 async function optimizeAudio(inputPath, outputDir) {
   // Ensure output directory exists
@@ -9,8 +9,8 @@ async function optimizeAudio(inputPath, outputDir) {
     console.log(`Created directory: ${outputDir}`);
   }
 
-  const filename = path.basename(inputPath, path.extname(inputPath)); // Get file name without extension
-  let outputPath = path.join(outputDir, `${filename}.m4a`); // Full path for output file
+  const filename = path.basename(inputPath, path.extname(inputPath)); 
+  let outputPath = path.join(outputDir, `${filename}.m4a`); 
 
   // Ensure the outputPath differs from the inputPath
   let counter = 1;
@@ -21,11 +21,11 @@ async function optimizeAudio(inputPath, outputDir) {
 
   return new Promise((resolve, reject) => {
     ffmpeg(inputPath)
-      .audioCodec('aac') // Set the audio codec to AAC
-      .audioBitrate('160k') // Set audio bitrate
-      .audioFrequency(44100) // Set audio frequency
-      .audioChannels(2) // Set audio channels to stereo (2)
-      .addOption('-map_metadata', '0') // Retain metadata from the input file
+      .audioCodec('aac') 
+      .audioBitrate('160k') 
+      .audioFrequency(44100)
+      .audioChannels(2) 
+      .addOption('-map_metadata', '0') 
       .on('end', () => {
         console.log(`Optimization complete: ${outputPath}`);
         resolve(outputPath);
@@ -34,7 +34,7 @@ async function optimizeAudio(inputPath, outputDir) {
         console.error(`Error optimizing audio file: ${err.message}`);
         reject(err);
       })
-      .save(outputPath); // Save the optimized file
+      .save(outputPath); 
   });
 }
 

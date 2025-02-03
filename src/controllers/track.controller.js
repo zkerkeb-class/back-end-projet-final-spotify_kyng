@@ -5,19 +5,14 @@ const multer = require('multer');
 const { ObjectId } = require('mongodb');
 const { faker } = require('@faker-js/faker');
 const { extractAudioMetadata } = require('../utils/metadataExtractor');
-
 const upload = multer({ dest: 'uploads/' });
-
-// const Track = require('../models/Track')(mongoose);
 
 const createTrack = async (req, res) => {
   try {
-    // Validate the presence of uploaded files
     if (!req.uploadedFiles || req.uploadedFiles.length === 0) {
       throw new Error('No audio files were uploaded.');
     }
 
-    // Use the first uploaded file
     const uploadedFile = req.uploadedFiles[0];
     const { convertedPath, originalName, size, mimetype } = uploadedFile;
 
@@ -29,12 +24,6 @@ const createTrack = async (req, res) => {
     } catch (metadataError) {
       console.warn('Metadata extraction failed, generating fake data');
     }
-
-    // Prepare track data with Faker-generated fallbacks
-    // let albumId = req.params.albumId;
-    // if (albumId && mongoose.Types.ObjectId.isValid(albumId)) {
-    //   albumId = new Types.ObjectId(albumId);
-    // }
 
     const trackData = {
       title: req.body.title || metadata.title,
@@ -49,7 +38,6 @@ const createTrack = async (req, res) => {
         size,
         mimetype,
       },
-      // album: req.body.album || metadata.album || faker.music.genre(),
       numberOfListens: 0,
       popularity: 0,
       trackNumber: 0,
@@ -125,7 +113,6 @@ const getTrackByTitle = async (req, res) => {
 const updatedTrack = async (req, res) => {
   try {
     const { id } = req.params;
-
     // Get the existing track by ID
     const track = await trackService.getTrackById(id);
 
@@ -133,20 +120,15 @@ const updatedTrack = async (req, res) => {
       logger.warn(`Track with ID ${id} not found for update.`);
       return res.status(404).json({ error: 'Track not found.' });
     }
-
-    // Only pass the fields that are provided in the request body
     const updatedData = req.body;
-
-    // If new audio files are uploaded, update the track's audio paths
     if (req.uploadedFiles && req.uploadedFiles.length > 0) {
       updatedData.audioFiles = req.uploadedFiles.map((file) => ({
-        path: file.convertedPath, // Use the converted path for the audio file
+        path: file.convertedPath, 
         originalName: file.originalName,
         size: file.size,
         mimetype: file.mimetype,
       }));
     }
-
     // Pass the existing track and new data to the service for updating
     const updatedTrack = await trackService.updatedTrack(id, updatedData);
 

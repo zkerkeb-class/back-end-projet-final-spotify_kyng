@@ -3,10 +3,9 @@ const logger = require('../utils/logger');
 
 // Handle initiating a manual backup
 const initiateBackup = async (req, res) => {
-  const config = req.body; // Assume backup config is sent in the body of the request
+  const config = req.body;
 
   try {
-    // Perform the backup using the provided config
     await performBackup(config);
     logger.info('Manual backup initiated successfully');
     res.status(200).json({ message: 'Backup initiated successfully' });
@@ -18,10 +17,8 @@ const initiateBackup = async (req, res) => {
 
 // Handle starting scheduled backups
 const startScheduledBackups = async (req, res) => {
-  const config = req.body; // Assume backup config is sent in the body of the request
-
+  const config = req.body; 
   try {
-    // Start the scheduled backup (runs daily at midnight)
     scheduleBackup(config);
     logger.info('Scheduled backups started');
     res.status(200).json({ message: 'Scheduled backups started' });

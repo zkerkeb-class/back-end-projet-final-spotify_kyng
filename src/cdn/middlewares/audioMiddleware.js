@@ -1,10 +1,10 @@
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
-const ffmpegPath = require('ffmpeg-static'); // Import static ffmpeg binary path
+const ffmpegPath = require('ffmpeg-static'); 
 const ffmpeg = require('fluent-ffmpeg');
 
-ffmpeg.setFfmpegPath(ffmpegPath); // Set the path for fluent-ffmpeg  // Required for audio conversion
+ffmpeg.setFfmpegPath(ffmpegPath); 
 
 // Define the upload directory paths
 const uploadDir = path.join(__dirname, '..', 'uploads');
@@ -87,11 +87,11 @@ const audioMiddleware = (req, res, next) => {
     try {
       for (const file of req.uploadedFiles) {
         const convertedPath = await convertToM4a(file.path, optimizedDir);
-        file.convertedPath = convertedPath; // Attach the converted path to the file info
+        file.convertedPath = convertedPath; 
       }
 
       console.log('Files converted to m4a format successfully');
-      next(); // Proceed to the next middleware or controller
+      next(); 
     } catch (conversionError) {
       console.error('Error during audio conversion:', conversionError.message);
       return res.status(500).json({

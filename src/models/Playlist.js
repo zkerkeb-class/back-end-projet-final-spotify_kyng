@@ -1,7 +1,6 @@
 module.exports = (mongoose) => {
   const playlistSchema = new mongoose.Schema(
     {
-      // Playlist pistes
       pistes_audio: {
         type: String,
         required: true,

@@ -137,7 +137,7 @@ module.exports = {
   trackBandwidth,
   trackSuccessFailure,
   resetMetrics,
-  measureResponseTime,
+ // measureResponseTime,
   measureRedisLatency,
   measureMediaProcessingTime,
 };

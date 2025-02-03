@@ -13,7 +13,6 @@ const checkPermission = (requiredPermissions) => {
     if (!hasPermission) {
       return res.status(403).json({ message: 'Forbidden: insufficient permissions.' });
     }
-
     next();
   };
 };
