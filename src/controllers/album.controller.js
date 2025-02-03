@@ -1,34 +1,33 @@
 const albumService = require('../services/albumService');
 const logger = require('../utils/logger');
-// const mongoose = require('mongoose');
 
-// const Album = require('../models/Album')(mongoose);
-
-const createAlbum = async (req, res) => {
+   
+ const createAlbum = async (req, res) => {
   try {
-    
     if (!req.optimizedImages || req.optimizedImages.length === 0) {
       throw new Error('No optimized images found.');
     }
+    const mainImage = req.optimizedImages[0].url; 
+
     const albumData = {
       title: req.body.title,
       artistId: req.params.artistId,
       releaseDate: req.body.releaseDate,
       genre: req.body.genre,
       images: req.optimizedImages.map(img => ({
-        path: img.url
+        path: img.url 
       }))
     };
+
     const album = await albumService.createAlbum(albumData);
     logger.info(`Album creation request handled successfully.`);
 
     res.status(201).json(album);
   } catch (error) {
     logger.error(`Error in createAlbum: ${error.message}.`);
-
     res.status(400).json({ error: error.message });
   }
-};
+};  
 
 const getAllAlbum = async (req, res) => {
   try {
@@ -46,29 +45,45 @@ const getAllAlbum = async (req, res) => {
   }
 };
 
+     
 const getAlbumById = async (req, res) => {
   try {
     const album = await albumService.getAlbumById(req.params.id);
 
     if (!album) {
       logger.warn(`Album with ID ${req.params.id} not found`);
-
       return res.status(404).json({ error: 'Album not found.' });
     }
+
+    // URLs de l'image
+    const cloudfrontUrl = album.images.length > 0 
+      ? album.images[0].path // Utiliser directement l'URL CloudFront
+      : null;
+
+    const filename = album.images.length > 0 
+      ? album.images[0].path.split('/').pop() // Extraire le nom du fichier
+      : null;
+
+    const localImageUrl = filename 
+      ? `http://localhost:8000/api/images/image/${encodeURIComponent(filename)}` // Construire l'URL locale
+      : null;
+
     const albumResponse = {
       title: album.title,
-      coverImageUrl: album.images.length > 0 ? album.images[0].path : null, // URL CloudFront
+      coverImageUrls: {
+        cloudfront: cloudfrontUrl, // URL CloudFront
+        local: localImageUrl, // URL locale
+      },
       artistId: album.artistId,
       releaseDate: album.releaseDate,
       genre: album.genre,
       duration: album.duration,
     };
-    logger.info(`Album with ID ${req.params.id} retrieved successfully.`);
 
-    res.status(200).json(album);
+    logger.info(`Album with ID ${req.params.id} retrieved successfully.`);
+    res.status(200).json(albumResponse);
   } catch (error) {
     logger.error(`Error in getAlbumById: ${error.message}.`);
-
     res.status(400).json({ error: error.message });
   }
 };
