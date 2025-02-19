@@ -36,9 +36,9 @@ const createTrack = async (req, res) => {
       },
       numberOfListens: 0,
       popularity: 0,
-      trackNumber: 0,
-      collaborators: [faker.person.fullName(), faker.person.fullName()],
-      credits: {
+      trackNumber: req.body.trackNumber,
+      collaborators: req.body.collaborators||[faker.person.fullName(), faker.person.fullName()],
+      credits: req.body.credits || {
         producer: faker.person.fullName(),
         songwriter: faker.person.fullName(),
       },
