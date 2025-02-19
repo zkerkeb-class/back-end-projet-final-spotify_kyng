@@ -105,6 +105,8 @@ const getAlbumByTitle = async (req, res) => {
 const updatedAlbum = async (req, res) => {
   try {
     let albumData = req.body;
+    console.log({ albumData });
+    
     if (req.optimizedImages && req.optimizedImages.length > 0) {
       albumData.images = req.optimizedImages.map((img) => ({ path: img.url }));
     }
