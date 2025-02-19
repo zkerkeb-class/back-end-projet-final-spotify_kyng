@@ -64,19 +64,15 @@ const getAlbumById = async (req, res) => {
         : null;
 
     const localImageUrl = filename
-      ? `http://localhost:8000/api/images/image/${encodeURIComponent(filename)}` // Construire l'URL locale
+      ? `/api/images/image/${encodeURIComponent(filename)}` // Construire l'URL locale
       : null;
 
     const albumResponse = {
-      title: album.title,
-      coverImageUrls: {
+      ...album._doc,
+      images: {
         cloudfront: cloudfrontUrl, // URL CloudFront
-        local: localImageUrl, // URL locale
+        path: localImageUrl, // URL locale
       },
-      artistId: album.artistId,
-      releaseDate: album.releaseDate,
-      genre: album.genre,
-      duration: album.duration,
     };
 
     logger.info(`Album with ID ${req.params.id} retrieved successfully.`);
@@ -109,6 +105,8 @@ const getAlbumByTitle = async (req, res) => {
 const updatedAlbum = async (req, res) => {
   try {
     let albumData = req.body;
+    console.log({ albumData });
+    
     if (req.optimizedImages && req.optimizedImages.length > 0) {
       albumData.images = req.optimizedImages.map((img) => ({ path: img.url }));
     }
