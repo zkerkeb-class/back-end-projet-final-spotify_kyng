@@ -16,7 +16,7 @@ router.get('/:id', getTrackById);
 router.get('/title/:title', getTrackByTitle);
 
 // Route for updating a track
-router.patch('/:id', updatedTrack);
+router.patch('/:id', audioMiddleware, updatedTrack);
 
 // Route for deleting a track
 router.delete('/:id', deleteTrack);

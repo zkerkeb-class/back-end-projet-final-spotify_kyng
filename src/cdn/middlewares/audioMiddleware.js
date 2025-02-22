@@ -52,7 +52,6 @@ const audioMiddleware = (req, res, next) => {
   console.log('IN: ', req.files);
 
   upload.array('files', 10)(req, res, async (err) => {
-    
     if (err instanceof multer.MulterError) {
       console.error('Multer error:', err.message);
       return res.status(400).json({
@@ -67,11 +66,11 @@ const audioMiddleware = (req, res, next) => {
       });
     }
 
+    // Check if files were uploaded
     if (!req.files || req.files.length === 0) {
-      console.error('No files were uploaded');
-      return res.status(400).json({
-        error: 'No files uploaded',
-      });
+      console.log('No files were uploaded, proceeding without file processing');
+      req.uploadedFiles = []; // Set uploadedFiles to an empty array
+      return next(); // Proceed to the next middleware or controller
     }
 
     req.uploadedFiles = req.files.map((file) => ({
@@ -110,19 +109,21 @@ async function convertToM4a(inputPath, outputDir) {
 
   return new Promise((resolve, reject) => {
     ffmpeg(inputPath)
-      .audioCodec('aac')
-      .audioBitrate('160k')
-      .audioFrequency(44100)
-      .audioChannels(2)
-      .on('end', () => {
-        console.log(`Converted file saved to ${outputFilePath}`);
-        resolve(outputFilePath);
-      })
-      .on('error', (err) => {
-        console.error('Error during audio conversion:', err.message);
-        reject(err);
-      })
-      .save(outputFilePath);
+    .format('ipod') // Use ipod format which is compatible with m4a
+    .noVideo() // Explicitly specify no video
+    .audioCodec('aac')
+    .audioBitrate('160k')
+    .audioFrequency(44100)
+    .audioChannels(2)
+    .on('error', (err) => {
+      console.error('FFmpeg error:', err);
+      reject(err);
+    })
+    .on('end', () => {
+      console.log(`Converted file saved to ${outputFilePath}`);
+      resolve(outputFilePath);
+    })
+    .save(outputFilePath);
   });
 }
 
