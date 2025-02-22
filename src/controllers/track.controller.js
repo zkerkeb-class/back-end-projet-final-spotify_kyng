@@ -109,23 +109,40 @@ const getTrackByTitle = async (req, res) => {
 const updatedTrack = async (req, res) => {
   try {
     const { id } = req.params;
-    // Get the existing track by ID
     const track = await trackService.getTrackById(id);
 
     if (!track) {
       logger.warn(`Track with ID ${id} not found for update.`);
       return res.status(404).json({ error: 'Track not found.' });
     }
+
     const updatedData = req.body;
+
     if (req.uploadedFiles && req.uploadedFiles.length > 0) {
-      updatedData.audioFiles = req.uploadedFiles.map((file) => ({
-        path: file.convertedPath,
-        originalName: file.originalName,
-        size: file.size,
-        mimetype: file.mimetype,
-      }));
+      const uploadedFile = req.uploadedFiles[0];
+
+      let metadata = {};
+      try {
+        metadata = await extractAudioMetadata(uploadedFile.convertedPath);
+        logger.info('Updated track metadata:', metadata);
+      } catch (metadataError) {
+        logger.warn('Metadata extraction failed:', metadataError);
+      }
+
+      // updatedData.audioLink = {
+      //   originalName: uploadedFile.originalName,
+      //   convertedPath: uploadedFile.convertedPath,
+      //   size: uploadedFile.size,
+      //   mimetype: uploadedFile.mimetype
+      // };
+      updatedData.audioLink = uploadedFile.convertedPath;
+
+      updatedData.title = updatedData.title || metadata.title;
+      updatedData.duration = updatedData.duration || metadata.duration;
+      updatedData.artist = updatedData.artist || metadata.artist;
+      updatedData.album = updatedData.album || metadata.album;
     }
-    // Pass the existing track and new data to the service for updating
+
     const updatedTrack = await trackService.updatedTrack(id, updatedData);
 
     logger.info(`Track with ID ${id} updated successfully.`);

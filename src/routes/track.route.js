@@ -39,7 +39,7 @@ router.get('/:id', getTrackById);
 router.get('/title/:title', getTrackByTitle);
 
 // Route for updating a track
-router.patch('/:id', authMiddleware, checkPermission(['edit_metadata']), updatedTrack);
+router.patch('/:id', authMiddleware, checkPermission(['edit_metadata']), audioMiddleware, updatedTrack);
 
 // Route for deleting a track
 router.delete('/:id', authMiddleware, checkPermission(['delete_music']), deleteTrack);

@@ -65,10 +65,11 @@ const audioMiddleware = (req, res, next) => {
       });
     }
 
-    // If no files are uploaded, proceed to the next middleware/controller
+    // Check if files were uploaded
     if (!req.files || req.files.length === 0) {
-      logger.info('No files uploaded, proceeding without audio updates');
-      return next();
+      console.log('No files were uploaded, proceeding without file processing');
+      req.uploadedFiles = []; // Set uploadedFiles to an empty array
+      return next(); // Proceed to the next middleware or controller
     }
 
     // Attach uploaded file information to the request
@@ -106,19 +107,21 @@ async function convertToM4a(inputPath, outputDir) {
 
   return new Promise((resolve, reject) => {
     ffmpeg(inputPath)
-      .audioCodec('aac')
-      .audioBitrate('160k')
-      .audioFrequency(44100)
-      .audioChannels(2)
-      .on('end', () => {
-        logger.info(`Converted file saved to ${outputFilePath}`);
-        resolve(outputFilePath);
-      })
-      .on('error', (err) => {
-        logger.error('Error during audio conversion:', err.message);
-        reject(err);
-      })
-      .save(outputFilePath);
+    .format('ipod') // Use ipod format which is compatible with m4a
+    .noVideo() // Explicitly specify no video
+    .audioCodec('aac')
+    .audioBitrate('160k')
+    .audioFrequency(44100)
+    .audioChannels(2)
+    .on('error', (err) => {
+      console.error('FFmpeg error:', err);
+      reject(err);
+    })
+    .on('end', () => {
+      console.log(`Converted file saved to ${outputFilePath}`);
+      resolve(outputFilePath);
+    })
+    .save(outputFilePath);
   });
 }
 
