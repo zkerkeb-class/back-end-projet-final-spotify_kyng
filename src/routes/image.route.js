@@ -1,3 +1,4 @@
+// routes/image.route.js
 const express = require('express');
 const router = express.Router();
 const { BlobServiceClient } = require('@azure/storage-blob');
@@ -10,7 +11,40 @@ const CONTAINER_NAME = 'spotify-image';
 const blobServiceClient = BlobServiceClient.fromConnectionString(AZURE_STORAGE_CONNECTION_STRING);
 const containerClient = blobServiceClient.getContainerClient(CONTAINER_NAME);
 
-// Route pour servir les images
+/**
+ * @swagger
+ * tags:
+ *   name: Images
+ *   description: Gestion des images stockées sur Azure Blob Storage
+ */
+
+/**
+ * @swagger
+ * /image/{filename}:
+ *   get:
+ *     tags: [Images]
+ *     summary: Récupère une image par son nom de fichier
+ *     description: Permet de récupérer une image stockée sur Azure Blob Storage en utilisant son nom de fichier.
+ *     parameters:
+ *       - in: path
+ *         name: filename
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Nom du fichier de l'image
+ *     responses:
+ *       200:
+ *         description: Image récupérée avec succès
+ *         content:
+ *           image/*:
+ *             schema:
+ *               type: string
+ *               format: binary
+ *       404:
+ *         description: Image non trouvée
+ *       500:
+ *         description: Erreur lors de la récupération de l'image
+ */
 router.get('/image/:filename', async (req, res) => {
   const filename = req.params.filename;
 

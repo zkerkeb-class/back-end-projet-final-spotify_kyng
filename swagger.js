@@ -7,15 +7,15 @@ const options = {
     info: {
       title: 'SPOTIFY_API DOCUMENTATION',
       version: '1.0.0',
-      description: 'Documentation for your API',
+      //description: 'Documentation for your API',
     },
-    servers: [
+    /*servers: [
       {
-        url: 'http://localhost:8000', 
+        url: 'http://localhost8000', 
       },
-    ],
+    ], */
   },
-  apis: ['./routes/*.js'], 
+  apis: ['./src/routes/*.js'], 
 };
 
 const swaggerSpec = swaggerJsDoc(options);

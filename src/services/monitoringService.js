@@ -86,7 +86,7 @@ const measureMediaProcessingTime = async (file) => {
 // Fonction pour récupérer les métriques du serveur
 const getServerMetrics = () => {
   // CPU
-  const cpuUsage = os.loadavg(); // Charge moyenne sur 1, 5 et 15 minutes
+  const cpuUsage = os.loadavg(); 
 
   // Mémoire
   const freeMemory = os.freemem();
