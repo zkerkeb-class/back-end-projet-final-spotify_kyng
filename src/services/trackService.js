@@ -176,37 +176,39 @@ const getTrackByTitle = async (title) => {
 
 const updatedTrack = async (id, data) => {
   try {
-    if (!id) {
-      throw new Error('Track ID is required.');
-    }
+    if (!id) throw new Error('Track ID is required.');
 
-    // Fetch the existing track from the database by ID
     const existingTrack = await Track.findById(id);
-    
-    if (!existingTrack) {
-      throw new Error('Track not found.');
+    if (!existingTrack) throw new Error('Track not found.');
+
+    let fileName;
+    if (data.audioLink) {
+      const azureFileUrl = await uploadToAzureStorage(data.audioLink, 'spotify');
+      fileName = azureFileUrl.split('/').pop();
+      data.audioLink = fileName;
     }
 
-    // Merge the existing track data with the incoming data from the request body
+    const { artistId, albumId } = data;
+
+    if (artistId && mongoose.Types.ObjectId.isValid(artistId)) {
+      data.artistId = new Types.ObjectId(artistId);
+    } else if (artistId) {
+      data.artistId = null;
+    }
+
+    if (albumId && mongoose.Types.ObjectId.isValid(albumId)) {
+      data.albumId = new Types.ObjectId(albumId);
+    } else if (albumId) {
+      data.albumId = null;
+    }
+
     const updatedTrackData = { ...existingTrack.toObject(), ...data };
-
-    // Validate the merged data using the Joi schema
     const { error, value } = trackSchema.validate(updatedTrackData, { allowUnknown: true });
-    if (error) {
-      throw new Error(error.details[0].message);
-    }
+    if (error) throw new Error(error.details[0].message);
 
-    // Update the track in the database with the validated data
-    const updatedTrack = await Track.findByIdAndUpdate(id, value, { new: true });
-
-    // Clear the cache after updating
-    // redisClient.del('tracks:all'); // Verifier le cache
-
-    logger.info(`Track with ID ${id} updated successfully.`);
-
-    return updatedTrack;
+    return await Track.findByIdAndUpdate(id, value, { new: true });
   } catch (error) {
-    logger.error(`Error updating track: ${error.message}.`);
+    logger.error(`Error updating track: ${error.message}`);
     throw error;
   }
 };
