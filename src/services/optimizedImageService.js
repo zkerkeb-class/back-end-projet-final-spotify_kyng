@@ -93,7 +93,7 @@ async function generateOptimizedVersions(fileBuffer, originalFileName) {
 
     // 4. RETOUR DES RÉSULTATS
     return {
-      succes: true,
+      success: true,
       nombreVersions: versions.length,
       versions: versions,
     };

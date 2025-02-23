@@ -58,18 +58,21 @@ const imageUploadMiddleware = async (req, res, next) => {
 
     // Attach optimized image data to the request
     req.optimizedImages = [
-      { url: cloudfrontUrl },
-      { url: azureBlobUrl },
+      { url: cloudfrontUrl, path: fileName },
+      { url: azureBlobUrl, path: fileName },
       ...optimizedImages.versions.map((img) => {
         const filePath = path.basename(img.path);
-        const url = `https://${CLOUDFRONT_URL}/${filePath}`;
+        const url = `${cloudfrontUrl}/${filePath}`;
         return {
           url: url,
+          path: url,
           taille: img.taille,
           format: img.format,
         };
       }),
     ];
+    
+    
 
     next();
   } catch (error) {
