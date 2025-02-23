@@ -67,16 +67,20 @@ const getAlbumById = async (req, res) => {
       ? `http://localhost:8000/api/images/image/${encodeURIComponent(filename)}` // Construire l'URL locale
       : null;
 
+
+    const imagePathUrl = filename
+      ? `/api/images/image/${encodeURIComponent(filename)}`
+      : null;
+
     const albumResponse = {
-      title: album.title,
+      ...album._doc,
       coverImageUrls: {
         cloudfront: cloudfrontUrl, // URL CloudFront
         local: localImageUrl, // URL locale
       },
-      artistId: album.artistId,
-      releaseDate: album.releaseDate,
-      genre: album.genre,
-      duration: album.duration,
+      images:{
+        path: imagePathUrl
+      }
     };
 
     logger.info(`Album with ID ${req.params.id} retrieved successfully.`);
