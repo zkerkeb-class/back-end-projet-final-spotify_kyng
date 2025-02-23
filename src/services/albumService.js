@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const Album = require('../models/Album')(mongoose);
 const Artist = require('../models/Artist')(mongoose);
+const User = require('../models/user')(mongoose);
 const Joi = require('joi');
 const logger = require('../utils/logger');
 
@@ -27,7 +28,9 @@ const createAlbum = async (data) => {
   try {
     let artist = await Artist.findById(data.artistId);
     if (!artist) {
-      throw new Error(`Artist with the name '${data.artist}' not found.`);
+      artist = await User.findById(data.artistId);
+      artist.name=artist.firstname+" "+artist.lastname;
+      if (!artist) throw new Error(`Artist with the name '${data.artist}' not found.`);
     }
 
     const { error, value } = albumSchema.validate(data);
