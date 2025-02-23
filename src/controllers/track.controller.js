@@ -118,6 +118,9 @@ const updatedTrack = async (req, res) => {
 
     const updatedData = req.body;
 
+    
+console.log({updatedData});
+
     if (req.uploadedFiles && req.uploadedFiles.length > 0) {
       const uploadedFile = req.uploadedFiles[0];
 
