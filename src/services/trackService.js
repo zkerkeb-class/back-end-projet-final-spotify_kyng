@@ -73,7 +73,7 @@ const createTrack = async (data) => {
     // let fileName;
     if (typeof value.audioLink === 'object') {
       azureFileUrl = await uploadToAzureStorage(value.audioLink.convertedPath, 'spotify');
-      // fileName = azureFileUrl.split('/').pop(); // Extract only the file name
+      fileName = azureFileUrl.split('/').pop(); // Extract only the file name
     }
     //  else {
     //   fileName = value.audioLink.split('/').pop(); // Handle string input directly
@@ -82,7 +82,7 @@ const createTrack = async (data) => {
     // Rest of the method remains the same...
     const trackPayload = {
       ...value,
-      audioLink: azureFileUrl,
+      audioLink: fileName,
     };
 
     const track = await Track.create(trackPayload);
@@ -486,8 +486,11 @@ const streamTrack = async (filename) => {
   if (!filename) {
     throw new Error('Filename is required.');
   }
+  console.log('Testsss : ', filename);
 
-  const track = await mongoose.model('Track').findOne({ audioLink: filename });
+  const track = await Track.find({audioLink: filename});
+  console.log('Testsss 2 : ', track);
+
   if (!track) {
     throw new Error('Track not found.');
   }
