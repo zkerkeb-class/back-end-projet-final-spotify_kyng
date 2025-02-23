@@ -488,7 +488,7 @@ const streamTrack = async (filename) => {
   }
   console.log('Testsss : ', filename);
 
-  const track = await Track.find({audioLink: filename});
+  const track = await Track.findOne({audioLink: filename});
   console.log('Testsss 2 : ', track);
 
   if (!track) {

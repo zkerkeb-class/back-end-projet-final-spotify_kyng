@@ -23,7 +23,7 @@ const createTrack = async (req, res) => {
 
     const trackData = {
       title: req.body.title || metadata.title,
-      duration: req.body.duration || metadata.duration,
+      duration: metadata.duration || req.body.duration,
       albumId: req.params.albumId,
       artistId: req.body.artistId || metadata.artist,
       isExplicit: req.body.isExplicit,
