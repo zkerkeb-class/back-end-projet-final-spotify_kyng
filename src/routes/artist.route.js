@@ -28,6 +28,8 @@ router.get('/name/:name', artistController.getArtistByName);
 // router.put('/:id', artistController.updatedArtist);
 router.put(
   '/:id',
+  authMiddleware,
+  checkPermission(['edit_metadata']),
   upload.single('image'),
   imageUploadMiddleware,
   artistController.updatedArtist

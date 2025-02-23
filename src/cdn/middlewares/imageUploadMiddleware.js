@@ -49,7 +49,7 @@ const imageUploadMiddleware = async (req, res, next) => {
     const optimizedImages = await generateOptimizedVersions(req.file.buffer, req.file.originalname);
 
     if (
-      !optimizedImages.succes ||
+      !optimizedImages.success ||
       !optimizedImages.versions ||
       optimizedImages.versions.length === 0
     ) {
